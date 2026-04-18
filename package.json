@@ -4,7 +4,8 @@
   "description": "Historia Clínica Electrónica - NOM-004-SSA3-2012",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "test": "node --test test/*.test.js"
   },
   "keywords": [],
   "author": "Jprdzm",
