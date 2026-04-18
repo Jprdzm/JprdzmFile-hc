@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Sistema HC</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; display: flex; height: 100vh; }
+    .izquierda { width: 55%; background: #0f1117; color: white; display: flex; flex-direction: column; justify-content: center; padding: 60px; }
+    .logo { display: flex; align-items: center; gap: 14px; margin-bottom: 48px; }
+    .logo-icono { width: 48px; height: 48px; background: #2c7a7b; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+    .logo-texto h2 { font-size: 20px; font-weight: 700; }
+    .logo-texto p { font-size: 13px; color: #888; }
+    .titulo { font-size: 32px; font-weight: 700; margin-bottom: 12px; line-height: 1.3; }
+    .subtitulo { font-size: 14px; color: #888; margin-bottom: 48px; line-height: 1.6; }
+    .caracteristica { display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: 10px; background: #1a1d27; margin-bottom: 12px; }
+    .car-icono { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .car-texto h4 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .car-texto p { font-size: 12px; color: #666; }
+    .derecha { width: 45%; background: #f5f7fa; display: flex; align-items: center; justify-content: center; }
+    .tarjeta { background: white; border-radius: 16px; padding: 40px; width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    .tarjeta-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 32px; }
+    .tarjeta-logo .logo-icono { width: 36px; height: 36px; font-size: 16px; }
+    .tarjeta-logo h3 { font-size: 16px; font-weight: 700; color: #111; }
+    .tarjeta-logo p { font-size: 11px; color: #999; }
+    .tabs { display: flex; background: #f0f0f0; border-radius: 8px; padding: 4px; margin-bottom: 28px; }
+    .tab { flex: 1; text-align: center; padding: 8px; border-radius: 6px; font-size: 13px; cursor: pointer; border: none; background: transparent; color: #888; }
+    .tab.activo { background: white; color: #111; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    .campo { margin-bottom: 16px; }
+    .campo input, .campo select { width: 100%; padding: 12px 14px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s; background: white; color: #333; }
+    .campo input:focus, .campo select:focus { border-color: #2c7a7b; }
+    .campo select { cursor: pointer; appearance: auto; }
+    .campo-row { display: flex; gap: 10px; margin-bottom: 16px; }
+    .campo-row .campo { flex: 1; margin-bottom: 0; }
+    .olvide { text-align: right; font-size: 12px; color: #888; margin-bottom: 24px; cursor: pointer; }
+    .btn-login { width: 100%; padding: 13px; background: #111; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn-login:hover { background: #2c7a7b; }
+    .btn-login:disabled { background: #999; cursor: not-allowed; }
+    .error { background: #fff0f0; color: #c0392b; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; display: none; }
+    .exito { background: #f0fff4; color: #27ae60; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; display: none; text-align: center; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <div class="izquierda">
+    <div class="logo">
+      <div class="logo-icono">🏥</div>
+      <div class="logo-texto"><h2>Sistema HC</h2><p>Historia Clínica Digital</p></div>
+    </div>
+    <h1 class="titulo">Gestión médica<br>inteligente</h1>
+    <p class="subtitulo">Expediente clínico electrónico con cumplimiento<br>NOM-004 y NOM-024. Notas inalterables y auditoría completa.</p>
+    <div class="caracteristica">
+      <div class="car-icono" style="background:#1e3a5f">📋</div>
+      <div class="car-texto"><h4>Notas Clínicas Inalterables</h4><p>Cadena de hash SHA-256 que garantiza no alteración (NOM-024)</p></div>
+    </div>
+    <div class="caracteristica">
+      <div class="car-icono" style="background:#3a1e1e">✍️</div>
+      <div class="car-texto"><h4>Consentimiento Informado Legal</h4><p>Firma del paciente + 2 testigos + médico tratante</p></div>
+    </div>
+    <div class="caracteristica">
+      <div class="car-icono" style="background:#1e3a2a">💊</div>
+      <div class="car-texto"><h4>Recetas Médicas</h4><p>Con cédula profesional y firma del médico</p></div>
+    </div>
+    <div class="caracteristica">
+      <div class="car-icono" style="background:#2a1e3a">🔒</div>
+      <div class="car-texto"><h4>Auditoría y Exportación</h4><p>Trazabilidad completa. Tus datos nunca están secuestrados.</p></div>
+    </div>
+  </div>
+
+  <div class="derecha">
+    <div class="tarjeta">
+      <div class="tarjeta-logo">
+        <div class="logo-icono">🏥</div>
+        <div><h3>Sistema HC</h3><p>Historia Clínica Digital</p></div>
+      </div>
+      <div class="tabs">
+        <button class="tab activo" id="tab-login" onclick="mostrarTab('login')">Iniciar sesión</button>
+        <button class="tab" id="tab-registro" onclick="mostrarTab('registro')">Registrarse</button>
+      </div>
+
+      <div id="form-login">
+        <div class="exito" id="exito-login"></div>
+        <div class="error" id="error-login"></div>
+        <div class="campo"><input type="text" id="login-usuario" placeholder="👤  Usuario"></div>
+        <div class="campo"><input type="password" id="login-password" placeholder="🔒  Contraseña"></div>
+        <div class="olvide" onclick="recuperarPassword()">¿Olvidaste tu contraseña?</div>
+        <button class="btn-login" id="btn-login" onclick="login()">Iniciar sesión →</button>
+      </div>
+
+      <div id="form-registro" style="display:none">
+        <div class="error" id="error-registro"></div>
+        <div class="campo"><input type="text" id="reg-nombre" placeholder="👤  Nombre completo"></div>
+
+        <div class="campo-row">
+          <div class="campo">
+            <select id="reg-titulo">
+              <option value="" disabled selected>Título / Rol</option>
+              <option value="Dr.">Dr. (Médico)</option>
+              <option value="Dra.">Dra. (Médica)</option>
+              <option value="Lic.">Lic. (Enfermería)</option>
+              <option value="Sr.">Sr. (Otro)</option>
+              <option value="Sra.">Sra. (Otro)</option>
+            </select>
+          </div>
+          <div class="campo">
+            <select id="reg-sexo">
+              <option value="" disabled selected>Sexo</option>
+              <option value="M">Masculino</option>
+              <option value="F">Femenino</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="campo" id="campo-cedula" style="display:none;">
+          <input type="text" id="reg-cedula" placeholder="🎓  Cédula profesional">
+        </div>
+
+        <div class="campo"><input type="text" id="reg-usuario" placeholder="🏥  Usuario"></div>
+        <div class="campo"><input type="password" id="reg-password" placeholder="🔒  Contraseña (mín. 6 caracteres)"></div>
+        <div class="campo"><input type="password" id="reg-confirmar" placeholder="🔒  Confirmar contraseña"></div>
+        <button class="btn-login" id="btn-registro" onclick="registro()">Crear cuenta →</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('input', () => {
+        document.getElementById('error-login').style.display = 'none';
+        document.getElementById('error-registro').style.display = 'none';
+        document.getElementById('exito-login').style.display = 'none';
+      });
+      el.addEventListener('change', () => {
+        document.getElementById('error-registro').style.display = 'none';
+      });
+    });
+
+    // Mostrar/ocultar cédula según título
+    document.getElementById('reg-titulo').addEventListener('change', function() {
+      const esMedico = this.value === 'Dr.' || this.value === 'Dra.';
+      document.getElementById('campo-cedula').style.display = esMedico ? 'block' : 'none';
+      if (!esMedico) document.getElementById('reg-cedula').value = '';
+    });
+
+    function mostrarTab(cual) {
+      document.getElementById('tab-login').classList.toggle('activo', cual === 'login');
+      document.getElementById('tab-registro').classList.toggle('activo', cual === 'registro');
+      document.getElementById('form-login').style.display = cual === 'login' ? 'block' : 'none';
+      document.getElementById('form-registro').style.display = cual === 'registro' ? 'block' : 'none';
+      document.querySelectorAll('#form-login input, #form-registro input').forEach(i => i.value = '');
+      document.querySelectorAll('#form-registro select').forEach(s => s.selectedIndex = 0);
+      document.getElementById('campo-cedula').style.display = 'none';
+      document.getElementById('error-login').style.display = 'none';
+      document.getElementById('error-registro').style.display = 'none';
+      if (cual === 'registro') document.getElementById('exito-login').style.display = 'none';
+    }
+
+    async function login() {
+      const usuario = document.getElementById('login-usuario').value.trim();
+      const password = document.getElementById('login-password').value;
+      const error = document.getElementById('error-login');
+      const btn = document.getElementById('btn-login');
+      if (!usuario || !password) { error.textContent = 'Llena todos los campos.'; error.style.display = 'block'; return; }
+      btn.disabled = true; btn.textContent = 'Verificando...';
+      try {
+        const res = await window.api.login(usuario, password);
+        if (res.ok) { await window.api.irA('dashboard.html'); }
+        else { error.textContent = res.error; error.style.display = 'block'; }
+      } catch (e) { error.textContent = 'Error de conexión.'; error.style.display = 'block'; }
+      finally { btn.disabled = false; btn.textContent = 'Iniciar sesión →'; }
+    }
+
+    async function registro() {
+      const nombre = document.getElementById('reg-nombre').value.trim();
+      const titulo = document.getElementById('reg-titulo').value;
+      const sexo = document.getElementById('reg-sexo').value;
+      const cedula = document.getElementById('reg-cedula').value.trim();
+      const usuario = document.getElementById('reg-usuario').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const confirmar = document.getElementById('reg-confirmar').value;
+      const error = document.getElementById('error-registro');
+      const btn = document.getElementById('btn-registro');
+
+      if (!nombre || !titulo || !sexo || !usuario || !password || !confirmar) {
+        error.textContent = 'Llena todos los campos obligatorios.'; error.style.display = 'block'; return;
+      }
+      const esMedico = titulo === 'Dr.' || titulo === 'Dra.';
+      if (esMedico && !cedula) {
+        error.textContent = 'La cédula profesional es obligatoria para médicos.'; error.style.display = 'block'; return;
+      }
+
+      btn.disabled = true; btn.textContent = 'Creando...';
+      try {
+        const res = await window.api.registro({ nombre, usuario, password, confirmar, cedula, titulo, sexo });
+        if (res.ok) {
+          mostrarTab('login');
+          const exito = document.getElementById('exito-login');
+          exito.textContent = '¡Cuenta creada! Ya puedes ingresar.';
+          exito.style.display = 'block';
+        } else { error.textContent = res.error; error.style.display = 'block'; }
+      } catch (e) { error.textContent = 'Error de conexión.'; error.style.display = 'block'; }
+      finally { btn.disabled = false; btn.textContent = 'Crear cuenta →'; }
+    }
+
+    function recuperarPassword() {
+      const error = document.getElementById('error-login');
+      error.textContent = 'Contacte al administrador del sistema.';
+      error.style.display = 'block';
+    }
+
+    document.getElementById('login-password').addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+    document.getElementById('reg-confirmar').addEventListener('keydown', (e) => { if (e.key === 'Enter') registro(); });
+  </script>
+</body>
+</html>

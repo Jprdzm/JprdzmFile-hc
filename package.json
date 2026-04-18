@@ -1,0 +1,20 @@
+{
+  "name": "hc",
+  "version": "1.1.0",
+  "description": "Sistema de Historias Clínicas",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^41.2.0"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "sqlite3": "^6.0.1"
+  }
+}

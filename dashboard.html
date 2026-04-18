@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard - Expediente Clínico</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+    body { display: flex; height: 100vh; background-color: #f0f4f8; overflow: hidden; }
+
+    .sidebar { width: 260px; background: #1a365d; color: white; display: flex; flex-direction: column; flex-shrink: 0; }
+    .sidebar-header { padding: 18px 20px; font-size: 20px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 10px; }
+    .sidebar-header span { font-size: 22px; }
+    .perfil-box { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .perfil-box .avatar { width: 44px; height: 44px; background: #ebf8ff; color: #2b6cb0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; flex-shrink: 0; }
+    .perfil-row { display: flex; align-items: center; gap: 12px; }
+    .perfil-box h4 { font-size: 13px; font-weight: 600; line-height: 1.3; }
+    .perfil-box p { font-size: 11px; color: #a0aec0; margin-top: 2px; }
+    .sidebar-nav { padding: 15px 12px; flex-grow: 1; overflow-y: auto; }
+    .nav-label { font-size: 10px; text-transform: uppercase; color: #63b3ed; font-weight: 700; letter-spacing: 1px; padding: 0 8px; margin-bottom: 8px; margin-top: 12px; }
+    .nav-btn { width: 100%; padding: 10px 14px; background: transparent; border: none; color: #cbd5e0; text-align: left; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; margin-bottom: 3px; transition: all 0.15s; display: flex; align-items: center; gap: 10px; }
+    .nav-btn:hover { background: rgba(255,255,255,0.08); color: white; }
+    .nav-btn.activo { background: rgba(255,255,255,0.15); color: white; font-weight: 600; }
+    .sidebar-footer { padding: 15px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .btn-salir { width: 100%; padding: 9px; background: rgba(245,101,101,0.15); color: #fc8181; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; }
+    .btn-salir:hover { background: #e53e3e; color: white; }
+
+    .main { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .topbar { background: white; padding: 16px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+    .topbar h1 { font-size: 20px; color: #1a202c; }
+    .topbar p { font-size: 13px; color: #718096; margin-top: 2px; }
+    .topbar-actions { display: flex; gap: 10px; }
+    .btn-primary { background: #2b6cb0; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
+    .btn-primary:hover { background: #2c5282; }
+    .content-area { flex-grow: 1; overflow-y: auto; padding: 0; display: flex; flex-direction: column; }
+
+    .lista-container { padding: 25px 30px; flex-grow: 1; }
+    .lista-titulo { font-size: 15px; font-weight: 700; color: #2d3748; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0; }
+    .pac-card { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+    .pac-card:hover { border-color: #90cdf4; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .pac-card strong { font-size: 15px; color: #1a202c; }
+    .pac-card p { font-size: 12px; color: #718096; margin-top: 3px; }
+    .pac-card .btn-abrir { background: #ebf8ff; color: #2b6cb0; border: none; padding: 7px 16px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
+
+    #vista-expediente { display: none; flex-direction: column; flex-grow: 1; overflow: hidden; }
+    #vista-expediente.visible { display: flex; }
+    .ficha { background: #1a365d; color: white; padding: 16px 30px; display: flex; gap: 30px; flex-wrap: wrap; flex-shrink: 0; }
+    .ficha-group { display: flex; flex-direction: column; }
+    .ficha-group .fl { font-size: 9px; text-transform: uppercase; color: #90cdf4; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 2px; }
+    .ficha-group .fv { font-size: 13px; font-weight: 600; }
+
+    .exp-tabs { display: flex; background: white; border-bottom: 2px solid #e2e8f0; padding: 0 30px; flex-shrink: 0; }
+    .exp-tab { padding: 14px 22px; font-size: 13px; font-weight: 600; color: #718096; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.15s; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+    .exp-tab:hover { color: #2d3748; background: #f7fafc; }
+    .exp-tab.activo { color: #2b6cb0; border-bottom-color: #2b6cb0; }
+
+    .timeline-section { background: #edf2f7; padding: 18px 30px; flex-shrink: 0; border-bottom: 1px solid #e2e8f0; }
+    .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .timeline-header h3 { font-size: 13px; color: #4a5568; font-weight: 700; }
+    .timeline-header span { font-size: 11px; color: #a0aec0; }
+    .timeline-track { display: flex; align-items: flex-start; gap: 0; overflow-x: auto; padding: 8px 0 12px; scroll-behavior: smooth; }
+    .timeline-track::-webkit-scrollbar { height: 4px; }
+    .timeline-track::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 4px; }
+    .tl-item { display: flex; flex-direction: column; align-items: center; min-width: 110px; cursor: pointer; position: relative; padding: 0 5px; }
+    .tl-date { font-size: 10px; color: #718096; font-weight: 600; margin-bottom: 8px; }
+    .tl-circle { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: white; transition: transform 0.15s, box-shadow 0.15s; position: relative; z-index: 2; }
+    .tl-circle:hover { transform: scale(1.12); }
+    .tl-item.selected .tl-circle { box-shadow: 0 0 0 4px rgba(43,108,176,0.3); transform: scale(1.12); }
+    .tl-label { font-size: 10px; color: #4a5568; font-weight: 600; margin-top: 6px; text-align: center; max-width: 100px; line-height: 1.3; }
+    .tl-author { font-size: 9px; color: #a0aec0; text-align: center; margin-top: 2px; }
+    .tl-tipo { font-size: 8px; color: #718096; text-align: center; margin-top: 1px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .tl-item:not(:last-child)::after { content:''; position:absolute; top:30px; left:calc(50% + 22px); width:calc(100% - 44px); border-top:2px dashed #cbd5e0; z-index:1; }
+
+    .bg-primera { background: #2b6cb0; }
+    .bg-evolucion { background: #dd6b20; }
+    .bg-postanestesica { background: #d69e2e; }
+    .bg-urgencias { background: #e53e3e; }
+    .bg-enfermeria { background: #38a169; }
+    .bg-add { background: #4a5568; border: 2px dashed #a0aec0; color: #a0aec0; }
+
+    .detail-panel { flex-grow: 1; overflow-y: auto; background: white; }
+    .detail-inner { padding: 25px 30px; }
+    .detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #edf2f7; }
+    .detail-header h2 { font-size: 18px; color: #1a202c; }
+    .detail-header p { font-size: 12px; color: #718096; margin-top: 4px; }
+    .detail-badge { font-size: 10px; font-family: monospace; background: #edf2f7; padding: 4px 8px; border-radius: 4px; color: #4a5568; }
+    .detail-section { margin-bottom: 18px; }
+    .detail-section h4 { font-size: 12px; color: #2b6cb0; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .detail-section p { font-size: 14px; color: #2d3748; line-height: 1.6; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+    .tabla-simple { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .tabla-simple th { background: #edf2f7; padding: 10px 12px; text-align: left; font-size: 11px; color: #4a5568; text-transform: uppercase; font-weight: 700; }
+    .tabla-simple td { padding: 10px 12px; border-bottom: 1px solid #edf2f7; font-size: 13px; color: #2d3748; }
+
+    .integridad-ok { background: #c6f6d5; color: #22543d; padding: 15px; border-radius: 8px; font-weight: 700; text-align: center; }
+    .integridad-error { background: #fed7d7; color: #742a2a; padding: 15px; border-radius: 8px; font-weight: 700; text-align: center; }
+    .empty-state { text-align: center; padding: 60px 20px; color: #a0aec0; }
+    .empty-state span { font-size: 48px; display: block; margin-bottom: 12px; }
+
+    /* MODALES */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-overlay.visible { display: flex; }
+    .modal-content { background: white; padding: 28px; border-radius: 12px; width: 750px; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+    .modal-content h2 { margin-bottom: 6px; color: #1a365d; font-size: 18px; }
+    .modal-subtitle { font-size: 11px; color: #e53e3e; margin-bottom: 18px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group.full { grid-column: span 2; }
+    .form-group label { font-size: 11px; font-weight: 700; color: #4a5568; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .form-group input, .form-group select, .form-group textarea { padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 6px; font-family: inherit; font-size: 13px; transition: border-color 0.15s; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #2b6cb0; outline: none; }
+    .form-group textarea { resize: vertical; min-height: 70px; }
+    .btn-guardar { background: #2b6cb0; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 700; margin-top: 16px; width: 100%; font-size: 14px; }
+    .btn-guardar:hover { background: #2c5282; }
+    .btn-guardar:disabled { background: #a0aec0; cursor: not-allowed; }
+    .btn-cancelar { background: #edf2f7; color: #4a5568; border: none; padding: 11px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 8px; width: 100%; font-size: 13px; }
+    .error-modal { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; display: none; }
+
+    .firma-container { border: 2px dashed #cbd5e0; border-radius: 8px; padding: 4px; margin-top: 4px; position: relative; background: #fafafa; }
+    .firma-container canvas { width: 100%; height: 90px; cursor: crosshair; display: block; }
+    .btn-limpiar-firma { position: absolute; top: 4px; right: 4px; background: #e53e3e; color: white; border: none; border-radius: 4px; padding: 2px 8px; font-size: 10px; cursor: pointer; }
+    .firmas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+    .firma-block label { font-size: 11px; font-weight: 700; color: #4a5568; margin-bottom: 4px; display: block; }
+    .firma-block input { width: 100%; padding: 8px 10px; border: 1.5px solid #e2e8f0; border-radius: 6px; font-size: 13px; margin-bottom: 6px; }
+
+    /* CIE-10 multi-select */
+    .cie10-container { position: relative; }
+    .cie10-selected { display: flex; flex-wrap: wrap; gap: 4px; min-height: 38px; padding: 6px 10px; border: 1.5px solid #e2e8f0; border-radius: 6px; cursor: text; background: white; }
+    .cie10-selected:focus-within { border-color: #2b6cb0; }
+    .cie10-tag { background: #ebf8ff; color: #2b6cb0; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+    .cie10-tag .remove { cursor: pointer; font-size: 14px; line-height: 1; color: #e53e3e; }
+    .cie10-search { border: none; outline: none; font-size: 13px; flex: 1; min-width: 120px; padding: 2px; }
+    .cie10-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1.5px solid #e2e8f0; border-radius: 0 0 6px 6px; max-height: 250px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+    .cie10-dropdown.open { display: block; }
+    .cie10-chapter { font-size: 10px; font-weight: 700; color: #2b6cb0; padding: 8px 12px 4px; text-transform: uppercase; background: #f7fafc; border-top: 1px solid #edf2f7; }
+    .cie10-option { padding: 6px 12px; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; }
+    .cie10-option:hover { background: #ebf8ff; }
+    .cie10-option.selected { background: #bee3f8; }
+    .cie10-option .code { font-weight: 700; color: #2b6cb0; margin-right: 8px; }
+    .tipo-nota-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <div class="sidebar-header"><span>🏥</span> Villas Juan Pablo</div>
+    <div class="perfil-box" id="perfil-paciente">
+      <div class="perfil-row">
+        <div class="avatar">?</div>
+        <div><h4>Seleccione Paciente</h4><p>Busque un paciente</p></div>
+      </div>
+    </div>
+
+    <div class="sidebar-nav" id="sidebar-nav">
+      <div class="nav-label">Navegación</div>
+      <button class="nav-btn activo" onclick="mostrarListaPacientes()">📋 Listado de Pacientes</button>
+    </div>
+
+    <div class="sidebar-nav" id="acciones-exp" style="display:none;">
+      <div class="nav-label">Notas Clínicas NOM-004</div>
+      <button class="nav-btn" onclick="abrirModalNotaTipo('primera_vez')">📄 Nota de Primera Vez</button>
+      <button class="nav-btn" onclick="abrirModalNotaTipo('evolucion')">📝 Nota de Evolución</button>
+      <button class="nav-btn" onclick="abrirModalNotaTipo('postanestesica')">💉 Nota Postanestésica</button>
+      <button class="nav-btn" onclick="abrirModalNotaTipo('urgencias')">🚑 Nota de Urgencias</button>
+      <button class="nav-btn" onclick="abrirModalNotaTipo('enfermeria')">👩‍⚕️ Nota de Enfermería</button>
+
+      <div class="nav-label" style="margin-top:16px;">Otros Documentos</div>
+      <button class="nav-btn" onclick="abrirModal('modal-consentimiento')">✍️ Consentimiento Informado</button>
+      <button class="nav-btn" onclick="abrirModal('modal-receta')">💊 Receta Médica</button>
+
+      <div class="nav-label" style="margin-top:16px;">Herramientas</div>
+      <button class="nav-btn" onclick="exportarExpediente()">📦 Exportar Expediente</button>
+      <button class="nav-btn" onclick="verificarIntegridad()">🔒 Verificar Integridad</button>
+      <button class="nav-btn" onclick="mostrarListaPacientes()">← Volver al Listado</button>
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="btn-salir" onclick="cerrarSesion()">🚪 Cerrar Sesión</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h1 id="texto-bienvenida">Directorio de Pacientes</h1>
+        <p>Expediente clínico electrónico · NOM-004 / NOM-024</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-primary" onclick="abrirModal('modal-paciente')">+ Registrar Paciente</button>
+      </div>
+    </div>
+
+    <div class="content-area">
+      <div class="lista-container" id="lista-pacientes-container">
+        <div class="lista-titulo">Pacientes Recientes</div>
+        <div id="contenedor-tarjetas"></div>
+      </div>
+
+      <div id="vista-expediente">
+        <div class="ficha" id="ficha-identificacion"></div>
+        <div class="exp-tabs" id="exp-tabs">
+          <div class="exp-tab activo" data-tab="notas" onclick="cambiarTab('notas')">📋 Notas Clínicas</div>
+          <div class="exp-tab" data-tab="consentimientos" onclick="cambiarTab('consentimientos')">✍️ Consentimientos</div>
+          <div class="exp-tab" data-tab="recetas" onclick="cambiarTab('recetas')">💊 Recetas</div>
+          <div class="exp-tab" data-tab="auditoria" onclick="cambiarTab('auditoria')">🔒 Auditoría</div>
+        </div>
+        <div class="timeline-section" id="timeline-section">
+          <div class="timeline-header">
+            <h3>Línea de Tiempo del Expediente</h3>
+            <span id="timeline-periodo"></span>
+          </div>
+          <div class="timeline-track" id="timeline-track"></div>
+        </div>
+        <div class="detail-panel">
+          <div class="detail-inner" id="detail-panel"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR PACIENTE -->
+  <div class="modal-overlay" id="modal-paciente">
+    <div class="modal-content">
+      <h2>Registrar Nuevo Paciente</h2>
+      <p style="font-size:11px; color:#718096; margin-bottom:16px;">Datos obligatorios según NOM-004</p>
+      <div class="error-modal" id="error-paciente"></div>
+      <div class="form-grid">
+        <div class="form-group"><label>Folio Interno</label><input type="text" id="pac-folio" placeholder="EXP-001"></div>
+        <div class="form-group"><label>CURP (18 caracteres)</label><input type="text" id="pac-curp" maxlength="18" style="text-transform:uppercase;"></div>
+        <div class="form-group"><label>Nombre(s)</label><input type="text" id="pac-nombre"></div>
+        <div class="form-group"><label>Primer Apellido</label><input type="text" id="pac-paterno"></div>
+        <div class="form-group"><label>Segundo Apellido</label><input type="text" id="pac-materno"></div>
+        <div class="form-group"><label>Fecha Nacimiento (AAAAMMDD)</label><input type="text" id="pac-fecha" maxlength="8" placeholder="19500524"></div>
+        <div class="form-group"><label>Sexo Biológico</label><select id="pac-sexo"><option value="H">Hombre</option><option value="M">Mujer</option></select></div>
+      </div>
+      <button class="btn-guardar" onclick="guardarPaciente()">Guardar Paciente</button>
+      <button class="btn-cancelar" onclick="cerrarModal('modal-paciente')">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- MODAL: NOTA CLÍNICA UNIVERSAL (campos dinámicos) -->
+  <div class="modal-overlay" id="modal-nota">
+    <div class="modal-content" style="width:800px;">
+      <h2 id="modal-nota-titulo">📝 Nueva Nota Clínica</h2>
+      <p class="modal-subtitle">⚠️ Una vez guardada, esta nota NO podrá ser modificada ni eliminada (NOM-024)</p>
+      <div class="error-modal" id="error-nota"></div>
+      <input type="hidden" id="nota-tipo" value="evolucion">
+
+      <!-- Campos dinámicos se inyectan aquí -->
+      <div id="campos-dinamicos-nota"></div>
+
+      <!-- CIE-10 siempre presente -->
+      <div style="margin-top:14px;">
+        <label style="font-size:11px; font-weight:700; color:#4a5568; text-transform:uppercase; letter-spacing:0.3px; margin-bottom:4px; display:block;">Diagnóstico(s) CIE-10 *</label>
+        <div class="cie10-container" id="cie10-container">
+          <div class="cie10-selected" id="cie10-selected" onclick="document.getElementById('cie10-search').focus()">
+            <input type="text" class="cie10-search" id="cie10-search" placeholder="Buscar código CIE-10..." oninput="filtrarCIE10(this.value)" onfocus="abrirDropdownCIE10()">
+          </div>
+          <div class="cie10-dropdown" id="cie10-dropdown"></div>
+        </div>
+      </div>
+
+      <!-- Plan de tratamiento siempre presente -->
+      <div class="form-grid" style="margin-top:14px;">
+        <div class="form-group full"><label>Plan de Tratamiento / Indicaciones</label><textarea id="nota-plan" placeholder="Plan terapéutico"></textarea></div>
+        <div class="form-group full">
+          <label>Firma del Profesional</label>
+          <div class="firma-container"><canvas id="firma-nota-canvas"></canvas><button class="btn-limpiar-firma" onclick="limpiarCanvas('firma-nota-canvas')">Limpiar</button></div>
+        </div>
+      </div>
+      <button class="btn-guardar" onclick="guardarNota()">Firmar y Guardar Nota</button>
+      <button class="btn-cancelar" onclick="cerrarModal('modal-nota')">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- MODAL: CONSENTIMIENTO INFORMADO -->
+  <div class="modal-overlay" id="modal-consentimiento">
+    <div class="modal-content" style="width:800px;">
+      <h2>✍️ Consentimiento Informado</h2>
+      <p class="modal-subtitle">⚠️ Requiere firma del paciente + 2 testigos + médico para validez legal</p>
+      <div class="error-modal" id="error-consentimiento"></div>
+      <div class="form-grid">
+        <div class="form-group"><label>Tipo de Procedimiento *</label><input type="text" id="cons-tipo"></div>
+        <div class="form-group"><label>Riesgos *</label><input type="text" id="cons-riesgos"></div>
+        <div class="form-group full"><label>Descripción del Procedimiento *</label><textarea id="cons-descripcion"></textarea></div>
+        <div class="form-group"><label>Beneficios</label><input type="text" id="cons-beneficios"></div>
+        <div class="form-group"><label>Alternativas</label><input type="text" id="cons-alternativas"></div>
+      </div>
+      <h3 style="margin:18px 0 8px; color:#1a365d; font-size:13px; border-top:2px solid #edf2f7; padding-top:14px;">Firmas Requeridas (4)</h3>
+      <div class="firmas-grid">
+        <div class="firma-block"><label>Nombre del Paciente *</label><input type="text" id="cons-nombre-paciente"><label>Firma del Paciente *</label><div class="firma-container"><canvas id="firma-paciente-canvas"></canvas><button class="btn-limpiar-firma" onclick="limpiarCanvas('firma-paciente-canvas')">Limpiar</button></div></div>
+        <div class="firma-block"><label>Médico Tratante</label><div class="firma-container" style="margin-top:28px;"><canvas id="firma-medico-cons-canvas"></canvas><button class="btn-limpiar-firma" onclick="limpiarCanvas('firma-medico-cons-canvas')">Limpiar</button></div></div>
+        <div class="firma-block"><label>Nombre Testigo 1 *</label><input type="text" id="cons-nombre-testigo1"><label>Firma Testigo 1 *</label><div class="firma-container"><canvas id="firma-testigo1-canvas"></canvas><button class="btn-limpiar-firma" onclick="limpiarCanvas('firma-testigo1-canvas')">Limpiar</button></div></div>
+        <div class="firma-block"><label>Nombre Testigo 2 *</label><input type="text" id="cons-nombre-testigo2"><label>Firma Testigo 2 *</label><div class="firma-container"><canvas id="firma-testigo2-canvas"></canvas><button class="btn-limpiar-firma" onclick="limpiarCanvas('firma-testigo2-canvas')">Limpiar</button></div></div>
+      </div>
+      <button class="btn-guardar" onclick="guardarConsentimiento()">Firmar y Guardar Consentimiento</button>
+      <button class="btn-cancelar" onclick="cerrarModal('modal-consentimiento')">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- MODAL: RECETA MÉDICA -->
+  <div class="modal-overlay" id="modal-receta">
+    <div class="modal-content">
+      <h2>💊 Receta Médica</h2>
+      <div class="error-modal" id="error-receta"></div>
+      <div class="form-grid">
+        <div class="form-group full"><label>Diagnóstico *</label><input type="text" id="receta-diagnostico"></div>
+        <div class="form-group"><label>Tipo de Receta</label><select id="receta-tipo"><option value="general">Medicamento General</option><option value="antibiotico">Antibiótico (requiere retención)</option></select></div>
+        <div class="form-group"><p style="font-size:11px; color:#e53e3e; margin-top:20px;">⚠️ Antibióticos requieren firma autógrafa original</p></div>
+        <div class="form-group full"><label>Medicamentos *</label><textarea id="receta-medicamentos" placeholder="Medicamento - Dosis - Vía - Frecuencia - Duración"></textarea></div>
+        <div class="form-group full"><label>Indicaciones</label><textarea id="receta-indicaciones"></textarea></div>
+        <div class="form-group full"><label>Firma del Médico</label><div class="firma-container"><canvas id="firma-receta-canvas"></canvas><button class="btn-limpiar-firma" onclick="limpiarCanvas('firma-receta-canvas')">Limpiar</button></div></div>
+      </div>
+      <button class="btn-guardar" onclick="guardarReceta()">Firmar y Emitir Receta</button>
+      <button class="btn-cancelar" onclick="cerrarModal('modal-receta')">Cancelar</button>
+    </div>
+  </div>
+
+  <script>
+    function esc(str) { const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
+
+    let folioActivo = null;
+    let tabActivo = 'notas';
+    let notasCache = [];
+    let notaSeleccionada = null;
+    let cie10Seleccionados = [];
+
+    // ══════════════════════════════════════════════════
+    //  CATÁLOGO CIE-10
+    // ══════════════════════════════════════════════════
+
+    const CIE10_CATALOGO = [
+      { cap: 'I - Enfermedades infecciosas y parasitarias', codigos: [
+        {c:'A00',d:'Cólera'},{c:'A01',d:'Fiebres tifoidea y paratifoidea'},{c:'A02',d:'Otras infecciones por Salmonella'},{c:'A03',d:'Shigelosis'},{c:'A04',d:'Otras infecciones intestinales bacterianas'},{c:'A05',d:'Otras intoxicaciones alimentarias bacterianas'},{c:'A06',d:'Amebiasis'},{c:'A07',d:'Otras enfermedades intestinales por protozoarios'},{c:'A08',d:'Infecciones intestinales debidas a virus'},{c:'A09',d:'Diarrea y gastroenteritis de presunto origen infeccioso'},
+        {c:'A15',d:'Tuberculosis respiratoria'},{c:'A16',d:'Tuberculosis respiratoria sin confirmación bacteriológica/histológica'},
+        {c:'A37',d:'Tos ferina'},{c:'A38',d:'Escarlatina'},{c:'A39',d:'Infección meningocócica'},
+        {c:'A40',d:'Septicemia estreptocócica'},{c:'A41',d:'Otras septicemias'},
+        {c:'A46',d:'Erisipela'},{c:'A49',d:'Infección bacteriana no especificada'},
+        {c:'A50',d:'Sífilis congénita'},{c:'A51',d:'Sífilis precoz'},{c:'A52',d:'Sífilis tardía'},{c:'A53',d:'Otras sífilis y las no especificadas'},
+        {c:'A54',d:'Infección gonocócica'},{c:'A56',d:'Otras infecciones de transmisión sexual por clamidia'},
+        {c:'A60',d:'Infección anogenital debida a virus del herpes'},{c:'A63',d:'Otras enfermedades de transmisión predominantemente sexual'},
+        {c:'A69',d:'Otras infecciones por espiroquetas'},{c:'A70',d:'Infección debida a Chlamydia psittaci'},
+        {c:'A80',d:'Poliomielitis aguda'},{c:'A81',d:'Infecciones del SNC por virus lentos'},
+        {c:'A82',d:'Rabia'},{c:'A84',d:'Encefalitis transmitida por garrapatas'},{c:'A85',d:'Otras encefalitis virales'},
+        {c:'A86',d:'Encefalitis viral no especificada'},{c:'A87',d:'Meningitis viral'},
+        {c:'A90',d:'Fiebre del dengue'},{c:'A91',d:'Fiebre del dengue hemorrágico'},
+        {c:'A92',d:'Otras fiebres virales transmitidas por mosquitos'},{c:'A93',d:'Otras fiebres virales transmitidas por artrópodos'},
+        {c:'B00',d:'Infecciones herpéticas'},{c:'B01',d:'Varicela'},{c:'B02',d:'Herpes zóster'},
+        {c:'B05',d:'Sarampión'},{c:'B06',d:'Rubéola'},{c:'B07',d:'Verrugas virales'},{c:'B08',d:'Otras infecciones virales con lesiones de piel y membranas mucosas'},
+        {c:'B09',d:'Infección viral no especificada con lesión de piel y membrana mucosa'},
+        {c:'B15',d:'Hepatitis aguda tipo A'},{c:'B16',d:'Hepatitis aguda tipo B'},{c:'B17',d:'Otras hepatitis virales agudas'},{c:'B18',d:'Hepatitis viral crónica'},{c:'B19',d:'Hepatitis viral sin otra especificación'},
+        {c:'B20',d:'Enfermedad por VIH'},{c:'B24',d:'Enfermedad por VIH sin otra especificación'},
+        {c:'B25',d:'Enfermedad debida a virus citomegálico'},{c:'B26',d:'Parotiditis infecciosa'},{c:'B27',d:'Mononucleosis infecciosa'},
+        {c:'B34',d:'Infección viral de sitio no especificado'},{c:'B35',d:'Dermatofitosis'},{c:'B36',d:'Otras micosis superficiales'},{c:'B37',d:'Candidiasis'},
+        {c:'B44',d:'Aspergilosis'},{c:'B45',d:'Criptococosis'},{c:'B49',d:'Micosis no especificada'},
+        {c:'B50',d:'Paludismo debido a Plasmodium falciparum'},{c:'B54',d:'Paludismo no especificado'},
+        {c:'B65',d:'Esquistosomiasis'},{c:'B67',d:'Equinococosis'},{c:'B69',d:'Cisticercosis'},
+        {c:'B76',d:'Anquilostomiasis y necatoriasis'},{c:'B77',d:'Ascariasis'},{c:'B80',d:'Enterobiasis'},{c:'B82',d:'Parasitosis intestinal sin otra especificación'},
+        {c:'B85',d:'Pediculosis y ftiriasis'},{c:'B86',d:'Escabiosis'},{c:'B87',d:'Miasis'},
+        {c:'B99',d:'Otras enfermedades infecciosas y las no especificadas'},
+      ]},
+      { cap: 'II - Neoplasias (tumores)', codigos: [
+        {c:'C00',d:'Tumor maligno del labio'},{c:'C01',d:'Tumor maligno de la base de la lengua'},{c:'C02',d:'Tumor maligno de otras partes de la lengua'},
+        {c:'C07',d:'Tumor maligno de la glándula parótida'},{c:'C10',d:'Tumor maligno de la orofaringe'},
+        {c:'C15',d:'Tumor maligno del esófago'},{c:'C16',d:'Tumor maligno del estómago'},
+        {c:'C18',d:'Tumor maligno del colon'},{c:'C19',d:'Tumor maligno de la unión rectosigmoidea'},{c:'C20',d:'Tumor maligno del recto'},
+        {c:'C22',d:'Tumor maligno del hígado'},{c:'C23',d:'Tumor maligno de la vesícula biliar'},{c:'C25',d:'Tumor maligno del páncreas'},
+        {c:'C32',d:'Tumor maligno de la laringe'},{c:'C33',d:'Tumor maligno de la tráquea'},{c:'C34',d:'Tumor maligno de los bronquios y del pulmón'},
+        {c:'C43',d:'Melanoma maligno de la piel'},{c:'C44',d:'Otros tumores malignos de la piel'},
+        {c:'C50',d:'Tumor maligno de la mama'},
+        {c:'C53',d:'Tumor maligno del cuello del útero'},{c:'C54',d:'Tumor maligno del cuerpo del útero'},{c:'C56',d:'Tumor maligno del ovario'},
+        {c:'C61',d:'Tumor maligno de la próstata'},{c:'C62',d:'Tumor maligno del testículo'},
+        {c:'C64',d:'Tumor maligno del riñón'},{c:'C67',d:'Tumor maligno de la vejiga urinaria'},
+        {c:'C71',d:'Tumor maligno del encéfalo'},{c:'C73',d:'Tumor maligno de la glándula tiroides'},
+        {c:'C81',d:'Enfermedad de Hodgkin'},{c:'C82',d:'Linfoma no Hodgkin folicular'},{c:'C83',d:'Linfoma no Hodgkin difuso'},
+        {c:'C90',d:'Mieloma múltiple y tumores malignos de células plasmáticas'},
+        {c:'C91',d:'Leucemia linfoide'},{c:'C92',d:'Leucemia mieloide'},
+        {c:'D00',d:'Carcinoma in situ de la cavidad bucal, esófago y estómago'},
+        {c:'D10',d:'Tumor benigno de la boca y la faringe'},{c:'D12',d:'Tumor benigno del colon y recto'},
+        {c:'D17',d:'Tumor lipomatoso benigno'},{c:'D22',d:'Nevo melanocítico'},{c:'D23',d:'Otros tumores benignos de la piel'},
+        {c:'D25',d:'Leiomioma del útero'},{c:'D32',d:'Tumor benigno de las meninges'},
+        {c:'D37',d:'Tumor de comportamiento incierto de cavidad bucal y órganos digestivos'},
+        {c:'D48',d:'Tumor de comportamiento incierto de otros sitios'},
+      ]},
+      { cap: 'III - Enfermedades de la sangre', codigos: [
+        {c:'D50',d:'Anemia por deficiencia de hierro'},{c:'D51',d:'Anemia por deficiencia de vitamina B12'},{c:'D52',d:'Anemia por deficiencia de folatos'},
+        {c:'D53',d:'Otras anemias nutricionales'},{c:'D55',d:'Anemia debida a trastornos enzimáticos'},
+        {c:'D56',d:'Talasemia'},{c:'D57',d:'Trastornos falciformes'},{c:'D58',d:'Otras anemias hemolíticas hereditarias'},
+        {c:'D59',d:'Anemia hemolítica adquirida'},{c:'D61',d:'Otras anemias aplásticas'},{c:'D62',d:'Anemia posthemorrágica aguda'},
+        {c:'D64',d:'Otras anemias'},{c:'D65',d:'Coagulación intravascular diseminada'},
+        {c:'D66',d:'Deficiencia hereditaria del factor VIII (Hemofilia A)'},{c:'D68',d:'Otros defectos de la coagulación'},
+        {c:'D69',d:'Púrpura y otras afecciones hemorrágicas'},{c:'D70',d:'Agranulocitosis'},
+        {c:'D72',d:'Otros trastornos de los leucocitos'},{c:'D75',d:'Otras enfermedades de la sangre'},
+        {c:'D80',d:'Inmunodeficiencia con predominio de defectos de anticuerpos'},{c:'D84',d:'Otras inmunodeficiencias'},
+        {c:'D89',d:'Otros trastornos que afectan el mecanismo de la inmunidad'},
+      ]},
+      { cap: 'IV - Enfermedades endocrinas, nutricionales y metabólicas', codigos: [
+        {c:'E00',d:'Síndrome congénito por deficiencia de yodo'},{c:'E01',d:'Trastornos tiroideos vinculados a deficiencia de yodo'},
+        {c:'E02',d:'Hipotiroidismo subclínico por deficiencia de yodo'},{c:'E03',d:'Otro hipotiroidismo'},{c:'E04',d:'Otro bocio no tóxico'},
+        {c:'E05',d:'Tirotoxicosis (hipertiroidismo)'},{c:'E06',d:'Tiroiditis'},{c:'E07',d:'Otros trastornos tiroideos'},
+        {c:'E10',d:'Diabetes mellitus tipo 1'},{c:'E11',d:'Diabetes mellitus tipo 2'},{c:'E12',d:'Diabetes mellitus asociada con desnutrición'},
+        {c:'E13',d:'Otras diabetes mellitus especificadas'},{c:'E14',d:'Diabetes mellitus no especificada'},
+        {c:'E15',d:'Coma hipoglucémico no diabético'},{c:'E16',d:'Otros trastornos de la secreción pancreática interna'},
+        {c:'E20',d:'Hipoparatiroidismo'},{c:'E21',d:'Hiperparatiroidismo'},{c:'E22',d:'Hiperfunción de la hipófisis'},
+        {c:'E23',d:'Hipofunción y otros trastornos de la hipófisis'},{c:'E24',d:'Síndrome de Cushing'},{c:'E25',d:'Trastornos adrenogenitales'},
+        {c:'E26',d:'Hiperaldosteronismo'},{c:'E27',d:'Otros trastornos de la glándula suprarrenal'},{c:'E28',d:'Disfunción ovárica'},
+        {c:'E29',d:'Disfunción testicular'},{c:'E30',d:'Trastornos de la pubertad'},
+        {c:'E34',d:'Otros trastornos endocrinos'},
+        {c:'E40',d:'Kwashiorkor'},{c:'E41',d:'Marasmo nutricional'},{c:'E43',d:'Desnutrición proteicocalórica severa no especificada'},
+        {c:'E44',d:'Desnutrición proteicocalórica de grado moderado y leve'},{c:'E46',d:'Desnutrición proteicocalórica no especificada'},
+        {c:'E50',d:'Deficiencia de vitamina A'},{c:'E51',d:'Deficiencia de tiamina'},{c:'E53',d:'Deficiencia de otras vitaminas del grupo B'},
+        {c:'E55',d:'Deficiencia de vitamina D'},{c:'E56',d:'Otras deficiencias de vitaminas'},
+        {c:'E61',d:'Deficiencia de otros elementos nutrientes'},{c:'E63',d:'Otras deficiencias nutricionales'},
+        {c:'E65',d:'Adiposidad localizada'},{c:'E66',d:'Obesidad'},
+        {c:'E67',d:'Otros tipos de hiperalimentación'},
+        {c:'E70',d:'Trastornos del metabolismo de aminoácidos aromáticos'},{c:'E71',d:'Trastornos del metabolismo de aminoácidos de cadena ramificada'},
+        {c:'E72',d:'Otros trastornos del metabolismo de aminoácidos'},
+        {c:'E73',d:'Intolerancia a la lactosa'},{c:'E74',d:'Otros trastornos del metabolismo de carbohidratos'},
+        {c:'E75',d:'Trastornos del metabolismo de esfingolípidos y otras lipidosis'},{c:'E76',d:'Trastornos del metabolismo de glucosaminoglicanos'},
+        {c:'E78',d:'Trastornos del metabolismo de las lipoproteínas y otras lipidemias'},
+        {c:'E79',d:'Trastornos del metabolismo de las purinas y de las pirimidinas'},
+        {c:'E83',d:'Trastornos del metabolismo de los minerales'},{c:'E84',d:'Fibrosis quística'},
+        {c:'E86',d:'Depleción del volumen (deshidratación)'},{c:'E87',d:'Otros trastornos de los líquidos, electrolitos y equilibrio ácido-básico'},
+        {c:'E88',d:'Otros trastornos metabólicos'},{c:'E89',d:'Trastornos endocrinos y metabólicos postprocedimiento'},
+      ]},
+      { cap: 'V - Trastornos mentales y del comportamiento', codigos: [
+        {c:'F00',d:'Demencia en la enfermedad de Alzheimer'},{c:'F01',d:'Demencia vascular'},{c:'F02',d:'Demencia en otras enfermedades'},
+        {c:'F03',d:'Demencia no especificada'},{c:'F05',d:'Delirium no inducido por alcohol u otras sustancias psicoactivas'},
+        {c:'F06',d:'Otros trastornos mentales debidos a lesión y disfunción cerebral'},
+        {c:'F10',d:'Trastornos mentales y del comportamiento debidos al uso de alcohol'},
+        {c:'F11',d:'Trastornos por uso de opioides'},{c:'F12',d:'Trastornos por uso de cannabinoides'},
+        {c:'F13',d:'Trastornos por uso de sedantes o hipnóticos'},{c:'F14',d:'Trastornos por uso de cocaína'},
+        {c:'F15',d:'Trastornos por uso de otros estimulantes'},{c:'F17',d:'Trastornos por uso de tabaco'},
+        {c:'F19',d:'Trastornos por uso de múltiples drogas'},
+        {c:'F20',d:'Esquizofrenia'},{c:'F21',d:'Trastorno esquizotípico'},{c:'F22',d:'Trastornos delirantes persistentes'},
+        {c:'F23',d:'Trastornos psicóticos agudos y transitorios'},{c:'F25',d:'Trastornos esquizoafectivos'},
+        {c:'F30',d:'Episodio maníaco'},{c:'F31',d:'Trastorno afectivo bipolar'},{c:'F32',d:'Episodio depresivo'},
+        {c:'F33',d:'Trastorno depresivo recurrente'},{c:'F34',d:'Trastornos del humor persistentes (distimia)'},
+        {c:'F40',d:'Trastornos de ansiedad fóbica'},{c:'F41',d:'Otros trastornos de ansiedad'},
+        {c:'F41.0',d:'Trastorno de pánico'},{c:'F41.1',d:'Trastorno de ansiedad generalizada'},
+        {c:'F42',d:'Trastorno obsesivo-compulsivo'},{c:'F43',d:'Reacción al estrés grave y trastornos de adaptación'},
+        {c:'F43.1',d:'Trastorno de estrés postraumático'},{c:'F44',d:'Trastornos disociativos (de conversión)'},
+        {c:'F45',d:'Trastornos somatomorfos'},{c:'F48',d:'Otros trastornos neuróticos'},
+        {c:'F50',d:'Trastornos de la ingestión de alimentos (anorexia/bulimia)'},{c:'F51',d:'Trastornos no orgánicos del sueño'},
+        {c:'F52',d:'Disfunción sexual no orgánica'},
+        {c:'F60',d:'Trastornos específicos de la personalidad'},{c:'F63',d:'Trastornos de los hábitos y de los impulsos'},
+        {c:'F70',d:'Retraso mental leve'},{c:'F71',d:'Retraso mental moderado'},{c:'F72',d:'Retraso mental grave'},
+        {c:'F80',d:'Trastornos específicos del desarrollo del habla y del lenguaje'},
+        {c:'F84',d:'Trastornos generalizados del desarrollo (autismo)'},{c:'F84.0',d:'Autismo infantil'},
+        {c:'F90',d:'Trastornos hipercinéticos (TDAH)'},{c:'F91',d:'Trastornos de la conducta'},
+        {c:'F93',d:'Trastornos emocionales de comienzo habitual en la infancia'},
+        {c:'F98',d:'Otros trastornos del comportamiento y emocionales de comienzo en la infancia'},
+        {c:'F99',d:'Trastorno mental no especificado'},
+      ]},
+      { cap: 'VI - Enfermedades del sistema nervioso', codigos: [
+        {c:'G00',d:'Meningitis bacteriana'},{c:'G03',d:'Meningitis debida a otras causas'},
+        {c:'G04',d:'Encefalitis, mielitis y encefalomielitis'},{c:'G06',d:'Absceso y granuloma intracraneal e intrarraquídeo'},
+        {c:'G10',d:'Enfermedad de Huntington'},{c:'G20',d:'Enfermedad de Parkinson'},
+        {c:'G21',d:'Parkinsonismo secundario'},{c:'G24',d:'Distonía'},{c:'G25',d:'Otros trastornos extrapiramidales y del movimiento'},
+        {c:'G30',d:'Enfermedad de Alzheimer'},{c:'G31',d:'Otras enfermedades degenerativas del sistema nervioso'},
+        {c:'G35',d:'Esclerosis múltiple'},{c:'G37',d:'Otras enfermedades desmielinizantes del SNC'},
+        {c:'G40',d:'Epilepsia'},{c:'G41',d:'Estado de mal epiléptico'},{c:'G43',d:'Migraña'},
+        {c:'G44',d:'Otros síndromes de cefalea'},{c:'G45',d:'Ataques de isquemia cerebral transitoria'},
+        {c:'G47',d:'Trastornos del sueño'},{c:'G50',d:'Trastornos del nervio trigémino'},
+        {c:'G51',d:'Trastornos del nervio facial (parálisis de Bell)'},{c:'G54',d:'Trastornos de las raíces y plexos nerviosos'},
+        {c:'G56',d:'Mononeuropatías del miembro superior (síndrome de túnel carpiano)'},
+        {c:'G57',d:'Mononeuropatías del miembro inferior'},{c:'G58',d:'Otras mononeuropatías'},
+        {c:'G60',d:'Neuropatía hereditaria e idiopática'},{c:'G61',d:'Polineuropatía inflamatoria (Guillain-Barré)'},
+        {c:'G62',d:'Otras polineuropatías'},{c:'G63',d:'Polineuropatía en enfermedades clasificadas en otra parte'},
+        {c:'G70',d:'Miastenia gravis'},{c:'G71',d:'Trastornos primarios de los músculos (distrofias)'},
+        {c:'G80',d:'Parálisis cerebral infantil'},{c:'G81',d:'Hemiplejia'},{c:'G82',d:'Paraplejia y cuadriplejia'},
+        {c:'G83',d:'Otros síndromes paralíticos'},{c:'G91',d:'Hidrocefalia'},{c:'G93',d:'Otros trastornos del encéfalo'},
+      ]},
+      { cap: 'VII - Enfermedades del ojo', codigos: [
+        {c:'H00',d:'Orzuelo y calacio'},{c:'H01',d:'Otras inflamaciones del párpado'},{c:'H02',d:'Otros trastornos de los párpados'},
+        {c:'H04',d:'Trastornos del aparato lagrimal'},{c:'H10',d:'Conjuntivitis'},{c:'H11',d:'Otros trastornos de la conjuntiva'},
+        {c:'H15',d:'Trastornos de la esclerótica'},{c:'H16',d:'Queratitis'},{c:'H20',d:'Iridociclitis'},
+        {c:'H25',d:'Catarata senil'},{c:'H26',d:'Otras cataratas'},{c:'H33',d:'Desprendimiento y desgarro de la retina'},
+        {c:'H35',d:'Otros trastornos de la retina'},{c:'H40',d:'Glaucoma'},
+        {c:'H43',d:'Trastornos del cuerpo vítreo'},{c:'H44',d:'Trastornos del globo ocular'},
+        {c:'H46',d:'Neuritis óptica'},{c:'H49',d:'Estrabismo paralítico'},{c:'H50',d:'Otros estrabismos'},
+        {c:'H52',d:'Trastornos de la refracción y de la acomodación'},
+        {c:'H52.0',d:'Hipermetropía'},{c:'H52.1',d:'Miopía'},{c:'H52.2',d:'Astigmatismo'},{c:'H52.4',d:'Presbicia'},
+        {c:'H53',d:'Alteraciones de la visión'},{c:'H54',d:'Ceguera y disminución de la agudeza visual'},
+      ]},
+      { cap: 'VIII - Enfermedades del oído', codigos: [
+        {c:'H60',d:'Otitis externa'},{c:'H61',d:'Otros trastornos del oído externo'},
+        {c:'H65',d:'Otitis media no supurativa'},{c:'H66',d:'Otitis media supurativa'},
+        {c:'H68',d:'Inflamación y obstrucción de la trompa de Eustaquio'},
+        {c:'H70',d:'Mastoiditis'},{c:'H71',d:'Colesteatoma del oído medio'},
+        {c:'H72',d:'Perforación de la membrana timpánica'},{c:'H80',d:'Otosclerosis'},
+        {c:'H81',d:'Trastornos de la función vestibular (vértigo)'},{c:'H83',d:'Otros trastornos del oído interno'},
+        {c:'H90',d:'Hipoacusia conductiva y neurosensorial'},{c:'H91',d:'Otras hipoacusias'},
+        {c:'H93',d:'Otros trastornos del oído (tinnitus)'},
+      ]},
+      { cap: 'IX - Enfermedades del sistema circulatorio', codigos: [
+        {c:'I00',d:'Fiebre reumática sin mención de complicación cardíaca'},{c:'I05',d:'Enfermedades reumáticas de la válvula mitral'},
+        {c:'I10',d:'Hipertensión esencial (primaria)'},{c:'I11',d:'Enfermedad cardíaca hipertensiva'},
+        {c:'I12',d:'Enfermedad renal hipertensiva'},{c:'I13',d:'Enfermedad cardiorrenal hipertensiva'},
+        {c:'I15',d:'Hipertensión secundaria'},
+        {c:'I20',d:'Angina de pecho'},{c:'I21',d:'Infarto agudo del miocardio'},{c:'I22',d:'Infarto subsecuente del miocardio'},
+        {c:'I25',d:'Enfermedad isquémica crónica del corazón'},
+        {c:'I26',d:'Embolia pulmonar'},{c:'I27',d:'Otras enfermedades cardiopulmonares'},
+        {c:'I30',d:'Pericarditis aguda'},{c:'I33',d:'Endocarditis aguda y subaguda'},{c:'I34',d:'Trastornos no reumáticos de la válvula mitral'},
+        {c:'I35',d:'Trastornos no reumáticos de la válvula aórtica'},
+        {c:'I42',d:'Cardiomiopatía'},{c:'I44',d:'Bloqueo auriculoventricular y de rama izquierda del haz'},
+        {c:'I45',d:'Otros trastornos de la conducción'},{c:'I47',d:'Taquicardia paroxística'},
+        {c:'I48',d:'Fibrilación y aleteo auricular'},{c:'I49',d:'Otras arritmias cardíacas'},
+        {c:'I50',d:'Insuficiencia cardíaca'},{c:'I51',d:'Complicaciones y descripciones mal definidas de enfermedad cardíaca'},
+        {c:'I60',d:'Hemorragia subaracnoidea'},{c:'I61',d:'Hemorragia intracerebral'},{c:'I62',d:'Otras hemorragias intracraneales no traumáticas'},
+        {c:'I63',d:'Infarto cerebral'},{c:'I64',d:'Accidente vascular encefálico no especificado'},
+        {c:'I65',d:'Oclusión y estenosis de las arterias precerebrales'},{c:'I67',d:'Otras enfermedades cerebrovasculares'},
+        {c:'I69',d:'Secuelas de enfermedad cerebrovascular'},
+        {c:'I70',d:'Aterosclerosis'},{c:'I71',d:'Aneurisma y disección aórticos'},
+        {c:'I73',d:'Otras enfermedades vasculares periféricas'},{c:'I74',d:'Embolia y trombosis arteriales'},
+        {c:'I77',d:'Otros trastornos de arterias y arteriolas'},
+        {c:'I80',d:'Flebitis y tromboflebitis'},{c:'I82',d:'Otra embolia y trombosis venosas'},
+        {c:'I83',d:'Venas varicosas de los miembros inferiores'},{c:'I84',d:'Hemorroides'},
+        {c:'I85',d:'Várices esofágicas'},{c:'I86',d:'Várices de otros sitios'},
+        {c:'I87',d:'Otros trastornos de las venas'},{c:'I89',d:'Otros trastornos no infecciosos de vasos y ganglios linfáticos'},
+        {c:'I95',d:'Hipotensión'},{c:'I99',d:'Otros trastornos del sistema circulatorio'},
+      ]},
+      { cap: 'X - Enfermedades del sistema respiratorio', codigos: [
+        {c:'J00',d:'Rinofaringitis aguda (resfriado común)'},{c:'J01',d:'Sinusitis aguda'},{c:'J02',d:'Faringitis aguda'},
+        {c:'J03',d:'Amigdalitis aguda'},{c:'J04',d:'Laringitis y traqueítis agudas'},{c:'J05',d:'Laringitis obstructiva aguda (crup)'},
+        {c:'J06',d:'Infecciones agudas de las vías respiratorias superiores'},{c:'J06.9',d:'Infección aguda de vías respiratorias superiores no especificada'},
+        {c:'J09',d:'Influenza debida a virus de la influenza identificado'},{c:'J10',d:'Influenza debida a otro virus de la influenza identificado'},
+        {c:'J11',d:'Influenza debida a virus no identificado'},
+        {c:'J12',d:'Neumonía viral'},{c:'J13',d:'Neumonía debida a Streptococcus pneumoniae'},
+        {c:'J14',d:'Neumonía debida a Haemophilus influenzae'},{c:'J15',d:'Neumonía bacteriana'},
+        {c:'J18',d:'Neumonía, organismo no especificado'},
+        {c:'J20',d:'Bronquitis aguda'},{c:'J21',d:'Bronquiolitis aguda'},{c:'J22',d:'Infección aguda no especificada de las vías respiratorias inferiores'},
+        {c:'J30',d:'Rinitis alérgica y vasomotora'},{c:'J31',d:'Rinitis, nasofaringitis y faringitis crónicas'},
+        {c:'J32',d:'Sinusitis crónica'},{c:'J33',d:'Pólipo nasal'},{c:'J34',d:'Otros trastornos de la nariz y senos paranasales'},
+        {c:'J35',d:'Enfermedades crónicas de las amígdalas y de las adenoides'},
+        {c:'J36',d:'Absceso periamigdalino'},{c:'J37',d:'Laringitis y laringotraqueítis crónicas'},
+        {c:'J38',d:'Enfermedades de las cuerdas vocales y de la laringe'},
+        {c:'J40',d:'Bronquitis no especificada como aguda o crónica'},{c:'J41',d:'Bronquitis crónica simple y mucopurulenta'},
+        {c:'J42',d:'Bronquitis crónica no especificada'},{c:'J43',d:'Enfisema'},{c:'J44',d:'Otras enfermedades pulmonares obstructivas crónicas (EPOC)'},
+        {c:'J45',d:'Asma'},{c:'J46',d:'Estado asmático'},
+        {c:'J47',d:'Bronquiectasia'},
+        {c:'J60',d:'Neumoconiosis de los mineros del carbón'},{c:'J61',d:'Neumoconiosis debida al asbesto'},
+        {c:'J67',d:'Neumonitis por hipersensibilidad debida a polvos orgánicos'},
+        {c:'J68',d:'Afecciones respiratorias debidas a inhalación de agentes químicos'},
+        {c:'J80',d:'Síndrome de dificultad respiratoria del adulto'},{c:'J81',d:'Edema pulmonar'},
+        {c:'J84',d:'Otras enfermedades pulmonares intersticiales'},
+        {c:'J85',d:'Absceso del pulmón y del mediastino'},{c:'J86',d:'Piotórax (empiema)'},
+        {c:'J90',d:'Derrame pleural'},{c:'J93',d:'Neumotórax'},
+        {c:'J96',d:'Insuficiencia respiratoria'},{c:'J98',d:'Otros trastornos respiratorios'},
+      ]},
+      { cap: 'XI - Enfermedades del aparato digestivo', codigos: [
+        {c:'K00',d:'Trastornos del desarrollo y de la erupción de los dientes'},{c:'K01',d:'Dientes incluidos e impactados'},
+        {c:'K02',d:'Caries dental'},{c:'K03',d:'Otras enfermedades de los tejidos duros de los dientes'},
+        {c:'K04',d:'Enfermedades de la pulpa y tejidos periapicales'},{c:'K05',d:'Gingivitis y enfermedades periodontales'},
+        {c:'K08',d:'Otros trastornos de los dientes y de sus estructuras de sostén'},
+        {c:'K09',d:'Quistes de la región bucal'},{c:'K10',d:'Otras enfermedades de los maxilares'},
+        {c:'K11',d:'Enfermedades de las glándulas salivales'},{c:'K12',d:'Estomatitis y lesiones afines'},
+        {c:'K13',d:'Otras enfermedades de los labios y de la mucosa bucal'},
+        {c:'K14',d:'Enfermedades de la lengua'},
+        {c:'K20',d:'Esofagitis'},{c:'K21',d:'Enfermedad del reflujo gastroesofágico'},
+        {c:'K25',d:'Úlcera gástrica'},{c:'K26',d:'Úlcera duodenal'},{c:'K27',d:'Úlcera péptica de sitio no especificado'},
+        {c:'K29',d:'Gastritis y duodenitis'},{c:'K30',d:'Dispepsia'},
+        {c:'K35',d:'Apendicitis aguda'},{c:'K36',d:'Otros tipos de apendicitis'},{c:'K37',d:'Apendicitis no especificada'},
+        {c:'K40',d:'Hernia inguinal'},{c:'K41',d:'Hernia femoral'},{c:'K42',d:'Hernia umbilical'},
+        {c:'K43',d:'Hernia ventral'},{c:'K44',d:'Hernia diafragmática'},
+        {c:'K46',d:'Hernia abdominal no especificada'},
+        {c:'K50',d:'Enfermedad de Crohn'},{c:'K51',d:'Colitis ulcerosa'},
+        {c:'K52',d:'Otras colitis y gastroenteritis no infecciosas'},
+        {c:'K55',d:'Trastornos vasculares del intestino'},{c:'K56',d:'Íleo paralítico y obstrucción intestinal sin hernia'},
+        {c:'K57',d:'Enfermedad diverticular del intestino'},{c:'K58',d:'Síndrome de intestino irritable'},
+        {c:'K59',d:'Otros trastornos funcionales del intestino'},{c:'K60',d:'Fisura y fístula anal'},
+        {c:'K61',d:'Absceso de las regiones anal y rectal'},{c:'K62',d:'Otras enfermedades del ano y del recto'},
+        {c:'K63',d:'Otras enfermedades del intestino'},
+        {c:'K65',d:'Peritonitis'},
+        {c:'K70',d:'Enfermedad alcohólica del hígado'},{c:'K71',d:'Enfermedad tóxica del hígado'},
+        {c:'K72',d:'Insuficiencia hepática'},{c:'K73',d:'Hepatitis crónica'},{c:'K74',d:'Fibrosis y cirrosis del hígado'},
+        {c:'K75',d:'Otras enfermedades inflamatorias del hígado'},{c:'K76',d:'Otras enfermedades del hígado'},
+        {c:'K80',d:'Colelitiasis'},{c:'K81',d:'Colecistitis'},{c:'K82',d:'Otras enfermedades de la vesícula biliar'},
+        {c:'K83',d:'Otras enfermedades de las vías biliares'},
+        {c:'K85',d:'Pancreatitis aguda'},{c:'K86',d:'Otras enfermedades del páncreas'},
+        {c:'K92',d:'Otras enfermedades del aparato digestivo'},
+      ]},
+      { cap: 'XII - Enfermedades de la piel', codigos: [
+        {c:'L00',d:'Síndrome estafilocócico de la piel escaldada'},{c:'L01',d:'Impétigo'},{c:'L02',d:'Absceso cutáneo, furúnculo y ántrax'},
+        {c:'L03',d:'Celulitis'},{c:'L04',d:'Linfadenitis aguda'},{c:'L05',d:'Quiste pilonidal'},
+        {c:'L08',d:'Otras infecciones locales de la piel y del tejido subcutáneo'},
+        {c:'L10',d:'Pénfigo'},{c:'L13',d:'Otras enfermedades ampollares'},
+        {c:'L20',d:'Dermatitis atópica'},{c:'L21',d:'Dermatitis seborreica'},{c:'L22',d:'Dermatitis del pañal'},
+        {c:'L23',d:'Dermatitis alérgica de contacto'},{c:'L24',d:'Dermatitis de contacto por irritantes'},
+        {c:'L25',d:'Dermatitis de contacto no especificada'},{c:'L27',d:'Dermatitis debida a sustancias ingeridas'},
+        {c:'L28',d:'Liquen simple crónico y prúrigo'},{c:'L29',d:'Prurito'},{c:'L30',d:'Otras dermatitis'},
+        {c:'L40',d:'Psoriasis'},{c:'L41',d:'Parapsoriasis'},{c:'L42',d:'Pitiriasis rosada'},
+        {c:'L43',d:'Liquen plano'},{c:'L44',d:'Otros trastornos papuloescamosos'},
+        {c:'L50',d:'Urticaria'},{c:'L51',d:'Eritema multiforme'},{c:'L52',d:'Eritema nudoso'},
+        {c:'L53',d:'Otras afecciones eritematosas'},
+        {c:'L55',d:'Quemadura solar'},{c:'L56',d:'Otros cambios agudos de la piel debidos a radiación ultravioleta'},
+        {c:'L57',d:'Cambios de la piel debidos a la exposición crónica a radiación no ionizante'},
+        {c:'L60',d:'Trastornos de las uñas'},{c:'L63',d:'Alopecia areata'},{c:'L64',d:'Alopecia androgénica'},
+        {c:'L65',d:'Otra pérdida no cicatricial del pelo'},{c:'L66',d:'Alopecia cicatricial'},
+        {c:'L70',d:'Acné'},{c:'L71',d:'Rosácea'},
+        {c:'L72',d:'Quistes foliculares de la piel y del tejido subcutáneo'},
+        {c:'L73',d:'Otros trastornos foliculares'},{c:'L74',d:'Trastornos sudoríparos ecrinos'},
+        {c:'L80',d:'Vitiligo'},{c:'L81',d:'Otros trastornos de la pigmentación'},
+        {c:'L82',d:'Queratosis seborreica'},{c:'L83',d:'Acantosis nigricans'},{c:'L84',d:'Callos y callosidades'},
+        {c:'L85',d:'Otros engrosamientos epidérmicos'},{c:'L90',d:'Trastornos atróficos de la piel'},
+        {c:'L91',d:'Trastornos hipertróficos de la piel (queloides)'},{c:'L92',d:'Trastornos granulomatosos de la piel'},
+        {c:'L97',d:'Úlcera de miembro inferior'},{c:'L98',d:'Otros trastornos de la piel y del tejido subcutáneo'},
+      ]},
+      { cap: 'XIII - Enfermedades del sistema osteomuscular', codigos: [
+        {c:'M00',d:'Artritis piógena'},{c:'M02',d:'Artropatías reactivas'},{c:'M05',d:'Artritis reumatoide seropositiva'},
+        {c:'M06',d:'Otras artritis reumatoides'},{c:'M10',d:'Gota'},{c:'M13',d:'Otras artritis'},
+        {c:'M15',d:'Poliartrosis'},{c:'M16',d:'Coxartrosis (artrosis de la cadera)'},
+        {c:'M17',d:'Gonartrosis (artrosis de la rodilla)'},{c:'M18',d:'Artrosis de la primera articulación carpometacarpiana'},
+        {c:'M19',d:'Otras artrosis'},{c:'M20',d:'Deformidades adquiridas de los dedos'},
+        {c:'M21',d:'Otras deformidades adquiridas de los miembros'},{c:'M22',d:'Trastornos de la rótula'},
+        {c:'M23',d:'Trastorno interno de la rodilla'},{c:'M24',d:'Otros trastornos articulares específicos'},
+        {c:'M25',d:'Otros trastornos articulares'},{c:'M30',d:'Poliarteritis nudosa'},
+        {c:'M32',d:'Lupus eritematoso sistémico'},{c:'M33',d:'Dermatopolimiositis'},{c:'M34',d:'Esclerosis sistémica'},
+        {c:'M35',d:'Otros trastornos sistémicos del tejido conjuntivo'},
+        {c:'M40',d:'Cifosis y lordosis'},{c:'M41',d:'Escoliosis'},{c:'M42',d:'Osteocondrosis de la columna vertebral'},
+        {c:'M43',d:'Otras dorsopatías deformantes'},
+        {c:'M45',d:'Espondilitis anquilosante'},{c:'M46',d:'Otras espondilopatías inflamatorias'},
+        {c:'M47',d:'Espondilosis'},{c:'M48',d:'Otras espondilopatías'},
+        {c:'M50',d:'Trastornos de disco cervical'},{c:'M51',d:'Otros trastornos de los discos intervertebrales'},
+        {c:'M53',d:'Otras dorsopatías'},{c:'M54',d:'Dorsalgia'},
+        {c:'M54.5',d:'Lumbago (dolor lumbar bajo)'},
+        {c:'M60',d:'Miositis'},{c:'M62',d:'Otros trastornos de los músculos'},
+        {c:'M65',d:'Sinovitis y tenosinovitis'},{c:'M67',d:'Otros trastornos de la membrana sinovial y del tendón'},
+        {c:'M70',d:'Trastornos de los tejidos blandos relacionados con uso excesivo'},
+        {c:'M71',d:'Otras bursitis'},{c:'M72',d:'Trastornos fibroblásticos'},
+        {c:'M75',d:'Lesiones del hombro'},{c:'M76',d:'Entesopatías del miembro inferior'},
+        {c:'M77',d:'Otras entesopatías'},{c:'M79',d:'Otros trastornos de los tejidos blandos'},
+        {c:'M79.1',d:'Mialgia'},{c:'M79.3',d:'Paniculitis no especificada'},
+        {c:'M80',d:'Osteoporosis con fractura patológica'},{c:'M81',d:'Osteoporosis sin fractura patológica'},
+        {c:'M84',d:'Trastornos de la continuidad del hueso'},{c:'M85',d:'Otros trastornos de la densidad ósea'},
+        {c:'M86',d:'Osteomielitis'},{c:'M87',d:'Osteonecrosis'},
+        {c:'M99',d:'Lesiones biomecánicas no clasificadas en otra parte'},
+      ]},
+      { cap: 'XIV - Enfermedades del aparato genitourinario', codigos: [
+        {c:'N00',d:'Síndrome nefrítico agudo'},{c:'N03',d:'Síndrome nefrítico crónico'},{c:'N04',d:'Síndrome nefrótico'},
+        {c:'N05',d:'Síndrome nefrítico no especificado'},{c:'N10',d:'Nefritis tubulointersticial aguda (pielonefritis aguda)'},
+        {c:'N11',d:'Nefritis tubulointersticial crónica'},{c:'N12',d:'Nefritis tubulointersticial no especificada'},
+        {c:'N13',d:'Uropatía obstructiva y por reflujo'},{c:'N17',d:'Insuficiencia renal aguda'},
+        {c:'N18',d:'Insuficiencia renal crónica'},{c:'N19',d:'Insuficiencia renal no especificada'},
+        {c:'N20',d:'Cálculo del riñón y del uréter'},{c:'N21',d:'Cálculo de las vías urinarias inferiores'},
+        {c:'N23',d:'Cólico renal no especificado'},
+        {c:'N28',d:'Otros trastornos del riñón y del uréter'},
+        {c:'N30',d:'Cistitis'},{c:'N32',d:'Otros trastornos de la vejiga'},
+        {c:'N34',d:'Uretritis y síndrome uretral'},{c:'N35',d:'Estrechez uretral'},
+        {c:'N39',d:'Otros trastornos del sistema urinario'},
+        {c:'N39.0',d:'Infección de vías urinarias, sitio no especificado'},
+        {c:'N40',d:'Hiperplasia de la próstata'},{c:'N41',d:'Enfermedades inflamatorias de la próstata'},
+        {c:'N42',d:'Otros trastornos de la próstata'},{c:'N43',d:'Hidrocele y espermatocele'},
+        {c:'N44',d:'Torsión del testículo'},{c:'N45',d:'Orquitis y epididimitis'},
+        {c:'N46',d:'Infertilidad masculina'},{c:'N47',d:'Trastornos del prepucio (fimosis)'},
+        {c:'N48',d:'Otros trastornos del pene'},{c:'N49',d:'Trastornos inflamatorios de los órganos genitales masculinos'},
+        {c:'N50',d:'Otros trastornos de los órganos genitales masculinos'},
+        {c:'N60',d:'Displasia mamaria benigna'},{c:'N61',d:'Trastornos inflamatorios de la mama'},
+        {c:'N62',d:'Hipertrofia de la mama'},{c:'N63',d:'Masa no especificada en la mama'},
+        {c:'N64',d:'Otros trastornos de la mama'},
+        {c:'N70',d:'Salpingitis y ooforitis'},{c:'N71',d:'Enfermedad inflamatoria del útero'},
+        {c:'N72',d:'Enfermedad inflamatoria del cuello uterino'},{c:'N73',d:'Otras enfermedades inflamatorias pélvicas femeninas'},
+        {c:'N75',d:'Enfermedades de la glándula de Bartholin'},{c:'N76',d:'Otras inflamaciones de la vagina y la vulva'},
+        {c:'N80',d:'Endometriosis'},{c:'N81',d:'Prolapso genital femenino'},
+        {c:'N83',d:'Trastornos no inflamatorios del ovario, trompa y ligamento ancho'},
+        {c:'N84',d:'Pólipo del tracto genital femenino'},{c:'N85',d:'Otros trastornos no inflamatorios del útero'},
+        {c:'N87',d:'Displasia del cuello uterino'},{c:'N88',d:'Otros trastornos no inflamatorios del cuello uterino'},
+        {c:'N91',d:'Menstruación ausente, escasa o infrecuente'},{c:'N92',d:'Menstruación excesiva, frecuente e irregular'},
+        {c:'N93',d:'Otras hemorragias uterinas o vaginales anormales'},{c:'N94',d:'Dolor y otras afecciones del aparato genital femenino'},
+        {c:'N95',d:'Trastornos menopaúsicos y otros perimenopáusicos'},{c:'N97',d:'Infertilidad femenina'},
+      ]},
+      { cap: 'XV - Embarazo, parto y puerperio (selección)', codigos: [
+        {c:'O00',d:'Embarazo ectópico'},{c:'O01',d:'Mola hidatiforme'},{c:'O03',d:'Aborto espontáneo'},
+        {c:'O04',d:'Aborto médico'},{c:'O06',d:'Aborto no especificado'},
+        {c:'O10',d:'Hipertensión preexistente que complica el embarazo'},{c:'O11',d:'Trastornos hipertensivos preexistentes con proteinuria'},
+        {c:'O13',d:'Hipertensión gestacional sin proteinuria significativa'},{c:'O14',d:'Preeclampsia'},{c:'O15',d:'Eclampsia'},
+        {c:'O20',d:'Hemorragia precoz del embarazo'},{c:'O21',d:'Vómitos excesivos en el embarazo'},
+        {c:'O24',d:'Diabetes mellitus en el embarazo'},{c:'O26',d:'Atención materna por otras complicaciones del embarazo'},
+        {c:'O30',d:'Embarazo múltiple'},{c:'O32',d:'Atención materna por presentación anormal del feto'},
+        {c:'O34',d:'Atención materna por anormalidades conocidas de órganos pélvicos'},
+        {c:'O36',d:'Atención materna por otros problemas fetales conocidos'},
+        {c:'O40',d:'Polihidramnios'},{c:'O41',d:'Otros trastornos del líquido amniótico'},
+        {c:'O42',d:'Ruptura prematura de membranas'},{c:'O44',d:'Placenta previa'},
+        {c:'O45',d:'Desprendimiento prematuro de la placenta'},{c:'O46',d:'Hemorragia anteparto'},
+        {c:'O47',d:'Falso trabajo de parto'},{c:'O48',d:'Embarazo prolongado'},
+        {c:'O60',d:'Parto prematuro'},{c:'O62',d:'Anormalidades de la dinámica del trabajo de parto'},
+        {c:'O63',d:'Trabajo de parto prolongado'},{c:'O68',d:'Trabajo de parto y parto complicados por sufrimiento fetal'},
+        {c:'O69',d:'Trabajo de parto y parto complicados por problemas del cordón umbilical'},
+        {c:'O70',d:'Desgarro perineal durante el parto'},{c:'O71',d:'Otro trauma obstétrico'},
+        {c:'O72',d:'Hemorragia postparto'},{c:'O73',d:'Retención de la placenta'},
+        {c:'O80',d:'Parto único espontáneo'},{c:'O82',d:'Parto único por cesárea'},
+        {c:'O85',d:'Sepsis puerperal'},{c:'O86',d:'Otras infecciones puerperales'},
+        {c:'O90',d:'Complicaciones del puerperio'},{c:'O91',d:'Infecciones de la mama asociadas al parto'},
+        {c:'O92',d:'Otros trastornos de la mama y de la lactancia asociados al parto'},
+        {c:'O99',d:'Otras enfermedades maternas clasificables en otra parte'},
+      ]},
+      { cap: 'XVII - Malformaciones congénitas (selección)', codigos: [
+        {c:'Q00',d:'Anencefalia'},{c:'Q01',d:'Encefalocele'},{c:'Q03',d:'Hidrocéfalo congénito'},{c:'Q04',d:'Otras malformaciones congénitas del encéfalo'},
+        {c:'Q05',d:'Espina bífida'},{c:'Q10',d:'Malformaciones congénitas de párpados, aparato lagrimal y órbita'},
+        {c:'Q20',d:'Malformaciones congénitas de las cámaras cardíacas'},{c:'Q21',d:'Malformaciones congénitas de los tabiques cardíacos'},
+        {c:'Q25',d:'Malformaciones congénitas de las grandes arterias'},
+        {c:'Q35',d:'Fisura del paladar'},{c:'Q36',d:'Labio leporino'},{c:'Q37',d:'Fisura del paladar con labio leporino'},
+        {c:'Q40',d:'Otras malformaciones congénitas del tracto digestivo superior'},
+        {c:'Q50',d:'Malformaciones congénitas de ovarios, trompas y ligamentos anchos'},
+        {c:'Q53',d:'Testículo no descendido (criptorquidia)'},{c:'Q54',d:'Hipospadias'},
+        {c:'Q60',d:'Agenesia renal y otras malformaciones congénitas del riñón'},
+        {c:'Q65',d:'Deformidades congénitas de la cadera'},{c:'Q66',d:'Deformidades congénitas de los pies'},
+        {c:'Q69',d:'Polidactilia'},{c:'Q70',d:'Sindactilia'},{c:'Q71',d:'Defectos por reducción del miembro superior'},
+        {c:'Q79',d:'Malformaciones congénitas del sistema osteomuscular'},
+        {c:'Q80',d:'Ictiosis congénita'},{c:'Q82',d:'Otras malformaciones congénitas de la piel'},
+        {c:'Q85',d:'Facomatosis'},{c:'Q90',d:'Síndrome de Down'},{c:'Q96',d:'Síndrome de Turner'},
+      ]},
+      { cap: 'XVIII - Síntomas y signos (R00-R99)', codigos: [
+        {c:'R00',d:'Anormalidades del latido cardíaco'},{c:'R01',d:'Soplos cardíacos'},{c:'R03',d:'Lectura anormal de la presión arterial'},
+        {c:'R04',d:'Hemorragia de las vías respiratorias'},{c:'R05',d:'Tos'},{c:'R06',d:'Anormalidades de la respiración (disnea)'},
+        {c:'R07',d:'Dolor de garganta y en el pecho'},{c:'R09',d:'Otros síntomas del aparato circulatorio y respiratorio'},
+        {c:'R10',d:'Dolor abdominal y pélvico'},{c:'R11',d:'Náusea y vómito'},
+        {c:'R12',d:'Acidez'},{c:'R13',d:'Disfagia'},{c:'R14',d:'Flatulencia'},
+        {c:'R15',d:'Incontinencia fecal'},{c:'R17',d:'Ictericia no especificada'},
+        {c:'R19',d:'Otros síntomas del aparato digestivo y abdomen'},
+        {c:'R20',d:'Alteraciones de la sensibilidad cutánea'},{c:'R21',d:'Salpullido y otras erupciones cutáneas'},
+        {c:'R22',d:'Tumefacción, masa o prominencia localizada de la piel'},
+        {c:'R23',d:'Otros cambios de la piel'},
+        {c:'R25',d:'Movimientos involuntarios anormales'},{c:'R26',d:'Anormalidades de la marcha y de la movilidad'},
+        {c:'R27',d:'Otras fallas de coordinación'},
+        {c:'R29',d:'Otros síntomas del sistema nervioso y osteomuscular'},
+        {c:'R30',d:'Dolor asociado con la micción'},{c:'R31',d:'Hematuria'},{c:'R32',d:'Incontinencia urinaria'},
+        {c:'R33',d:'Retención de orina'},{c:'R35',d:'Poliuria'},
+        {c:'R39',d:'Otros síntomas del aparato urinario'},
+        {c:'R40',d:'Somnolencia, estupor y coma'},{c:'R41',d:'Otros síntomas de las funciones cognoscitivas'},
+        {c:'R42',d:'Mareo y desvanecimiento'},{c:'R44',d:'Otros síntomas de las percepciones (alucinaciones)'},
+        {c:'R45',d:'Síntomas del estado emocional'},{c:'R46',d:'Síntomas del aspecto y del comportamiento'},
+        {c:'R47',d:'Alteraciones del habla'},{c:'R49',d:'Alteraciones de la voz'},
+        {c:'R50',d:'Fiebre de origen desconocido'},{c:'R51',d:'Cefalea'},{c:'R52',d:'Dolor no clasificado en otra parte'},
+        {c:'R53',d:'Malestar y fatiga'},{c:'R55',d:'Síncope y colapso'},
+        {c:'R56',d:'Convulsiones'},{c:'R57',d:'Choque (shock)'},
+        {c:'R58',d:'Hemorragia no clasificada en otra parte'},{c:'R59',d:'Adenomegalia'},
+        {c:'R60',d:'Edema'},{c:'R61',d:'Hiperhidrosis'},
+        {c:'R62',d:'Falta del desarrollo fisiológico normal esperado'},
+        {c:'R63',d:'Síntomas relacionados con la alimentación (anorexia, polidipsia)'},
+        {c:'R68',d:'Otros síntomas y signos generales'},
+        {c:'R69',d:'Causas de morbilidad desconocidas y no especificadas'},
+        {c:'R73',d:'Nivel elevado de glucosa en sangre'},
+        {c:'R76',d:'Otros hallazgos inmunológicos anormales en suero'},
+        {c:'R78',d:'Hallazgo de drogas y otras sustancias en la sangre'},
+        {c:'R79',d:'Otros hallazgos anormales de la química sanguínea'},
+        {c:'R80',d:'Proteinuria aislada'},{c:'R82',d:'Otros hallazgos anormales en la orina'},
+        {c:'R87',d:'Hallazgos anormales en muestras del aparato genital femenino'},
+        {c:'R91',d:'Hallazgos anormales en diagnóstico por imagen del pulmón'},
+        {c:'R94',d:'Resultados anormales de estudios funcionales'},
+      ]},
+      { cap: 'XIX - Traumatismos y envenenamientos (selección)', codigos: [
+        {c:'S00',d:'Traumatismo superficial de la cabeza'},{c:'S01',d:'Herida de la cabeza'},
+        {c:'S02',d:'Fractura de huesos del cráneo y de la cara'},{c:'S03',d:'Luxación de articulaciones de la cabeza'},
+        {c:'S05',d:'Traumatismo del ojo y de la órbita'},{c:'S06',d:'Traumatismo intracraneal'},
+        {c:'S09',d:'Otros traumatismos de la cabeza'},
+        {c:'S10',d:'Traumatismo superficial del cuello'},{c:'S12',d:'Fractura del cuello'},
+        {c:'S13',d:'Luxación de articulaciones del cuello'},{c:'S14',d:'Traumatismo de nervios y médula espinal a nivel del cuello'},
+        {c:'S20',d:'Traumatismo superficial del tórax'},{c:'S22',d:'Fractura de costilla(s), esternón y columna torácica'},
+        {c:'S27',d:'Traumatismo de otros órganos intratorácicos'},
+        {c:'S30',d:'Traumatismo superficial del abdomen'},{c:'S32',d:'Fractura de la columna lumbar y de la pelvis'},
+        {c:'S36',d:'Traumatismo de órganos intraabdominales'},
+        {c:'S40',d:'Traumatismo superficial del hombro y del brazo'},{c:'S42',d:'Fractura del hombro y del brazo'},
+        {c:'S43',d:'Luxación del hombro'},{c:'S46',d:'Traumatismo de tendón del hombro y brazo'},
+        {c:'S50',d:'Traumatismo superficial del antebrazo'},{c:'S52',d:'Fractura del antebrazo'},
+        {c:'S53',d:'Luxación del codo'},
+        {c:'S60',d:'Traumatismo superficial de la muñeca y de la mano'},{c:'S62',d:'Fractura de muñeca y mano'},
+        {c:'S63',d:'Luxación de la muñeca y de la mano'},
+        {c:'S70',d:'Traumatismo superficial de la cadera y del muslo'},{c:'S72',d:'Fractura del fémur'},
+        {c:'S73',d:'Luxación de la cadera'},
+        {c:'S80',d:'Traumatismo superficial de la pierna'},{c:'S82',d:'Fractura de la pierna (tibia y peroné)'},
+        {c:'S83',d:'Luxación de la rodilla'},
+        {c:'S90',d:'Traumatismo superficial del tobillo y del pie'},{c:'S92',d:'Fractura del pie'},
+        {c:'S93',d:'Luxación y esguince del tobillo'},
+        {c:'T00',d:'Traumatismos superficiales que afectan múltiples regiones del cuerpo'},
+        {c:'T07',d:'Traumatismos múltiples no especificados'},
+        {c:'T14',d:'Traumatismo de región del cuerpo no especificada'},
+        {c:'T15',d:'Cuerpo extraño en parte externa del ojo'},{c:'T16',d:'Cuerpo extraño en el oído'},
+        {c:'T17',d:'Cuerpo extraño en las vías respiratorias'},{c:'T18',d:'Cuerpo extraño en el tubo digestivo'},
+        {c:'T20',d:'Quemadura de la cabeza y cuello'},{c:'T21',d:'Quemadura del tronco'},
+        {c:'T22',d:'Quemadura del hombro y miembro superior'},{c:'T24',d:'Quemadura de la cadera y miembro inferior'},
+        {c:'T30',d:'Quemadura de región del cuerpo no especificada'},{c:'T31',d:'Quemaduras clasificadas según extensión'},
+        {c:'T36',d:'Envenenamiento por antibióticos sistémicos'},{c:'T39',d:'Envenenamiento por analgésicos no opioides'},
+        {c:'T40',d:'Envenenamiento por narcóticos'},{c:'T42',d:'Envenenamiento por antiepilépticos y sedantes'},
+        {c:'T43',d:'Envenenamiento por psicotrópicos'},{c:'T45',d:'Envenenamiento por agentes de acción sobre la sangre'},
+        {c:'T50',d:'Envenenamiento por diuréticos y otras drogas'},{c:'T51',d:'Efecto tóxico del alcohol'},
+        {c:'T54',d:'Efecto tóxico de sustancias corrosivas'},{c:'T56',d:'Efecto tóxico de metales'},
+        {c:'T58',d:'Efecto tóxico del monóxido de carbono'},{c:'T59',d:'Efecto tóxico de otros gases'},
+        {c:'T63',d:'Efecto tóxico del contacto con animales venenosos'},
+        {c:'T65',d:'Efecto tóxico de otras sustancias'},
+        {c:'T66',d:'Efectos de la radiación'},{c:'T67',d:'Efectos del calor y de la luz'},
+        {c:'T68',d:'Hipotermia'},{c:'T69',d:'Otros efectos de la reducción de la temperatura'},
+        {c:'T71',d:'Asfixia'},{c:'T73',d:'Efectos de otras privaciones'},
+        {c:'T75',d:'Efectos de otras causas externas (rayos, movimiento, presión)'},
+        {c:'T78',d:'Efectos adversos no clasificados en otra parte (anafilaxia, alergia)'},
+        {c:'T78.0',d:'Choque anafiláctico debido a reacción adversa a alimentos'},
+        {c:'T78.2',d:'Choque anafiláctico no especificado'},
+        {c:'T78.4',d:'Alergia no especificada'},
+        {c:'T79',d:'Algunas complicaciones precoces de los traumatismos'},
+        {c:'T80',d:'Complicaciones consecutivas a infusión, transfusión e inyección'},
+        {c:'T81',d:'Complicaciones de procedimientos no clasificadas en otra parte'},
+        {c:'T84',d:'Complicaciones de dispositivos protésicos, implantes e injertos ortopédicos internos'},
+        {c:'T88',d:'Otras complicaciones de la atención médica y quirúrgica'},
+      ]},
+      { cap: 'XXI - Factores que influyen en el estado de salud (Z)', codigos: [
+        {c:'Z00',d:'Examen general e investigación de personas sin quejas ni diagnóstico'},{c:'Z01',d:'Otros exámenes especiales'},
+        {c:'Z02',d:'Examen y observación con fines administrativos'},
+        {c:'Z03',d:'Observación y evaluación médicas por sospecha de enfermedades'},
+        {c:'Z04',d:'Examen y observación por otras razones'},
+        {c:'Z09',d:'Examen de seguimiento después de tratamiento'},
+        {c:'Z10',d:'Control general de salud de rutina de una subpoblación definida'},
+        {c:'Z11',d:'Examen de pesquisa especial para enfermedades infecciosas y parasitarias'},
+        {c:'Z12',d:'Examen de pesquisa especial para tumores'},
+        {c:'Z13',d:'Examen de pesquisa especial para otras enfermedades y trastornos'},
+        {c:'Z20',d:'Contacto con y exposición a enfermedades transmisibles'},
+        {c:'Z21',d:'Estado de infección asintomática por VIH'},
+        {c:'Z22',d:'Portador de enfermedad infecciosa'},
+        {c:'Z23',d:'Necesidad de inmunización contra enfermedad bacteriana única'},
+        {c:'Z27',d:'Necesidad de inmunización contra combinaciones de enfermedades infecciosas'},
+        {c:'Z29',d:'Necesidad de otras medidas profilácticas'},
+        {c:'Z30',d:'Atención para anticoncepción'},
+        {c:'Z32',d:'Examen y prueba del embarazo'},{c:'Z33',d:'Embarazo confirmado'},
+        {c:'Z34',d:'Supervisión de embarazo normal'},
+        {c:'Z35',d:'Supervisión de embarazo de alto riesgo'},
+        {c:'Z36',d:'Pesquisa prenatal'},
+        {c:'Z37',d:'Producto del parto'},
+        {c:'Z38',d:'Nacidos vivos según lugar de nacimiento'},
+        {c:'Z39',d:'Atención y examen postparto'},
+        {c:'Z71',d:'Personas en contacto con los servicios de salud por consulta y consejo médico'},
+        {c:'Z72',d:'Problemas relacionados con el estilo de vida'},
+        {c:'Z73',d:'Problemas relacionados con dificultades para el manejo de la vida'},
+        {c:'Z76',d:'Personas que acuden a los servicios de salud en otras circunstancias'},
+        {c:'Z85',d:'Historia personal de tumor maligno'},
+        {c:'Z86',d:'Historia personal de algunas otras enfermedades'},
+        {c:'Z87',d:'Historia personal de otras enfermedades y afecciones'},
+        {c:'Z88',d:'Historia personal de alergia a drogas, medicamentos y sustancias biológicas'},
+        {c:'Z91',d:'Historia personal de factores de riesgo'},
+        {c:'Z96',d:'Presencia de otros implantes funcionales'},
+      ]},
+    ];
+
+    // ══════════════════════════════════════════════════
+    //  CAMPOS POR TIPO DE NOTA (NOM-004)
+    // ══════════════════════════════════════════════════
+
+    const CAMPOS_POR_TIPO = {
+      primera_vez: {
+        titulo: '📄 Nota de Primera Vez',
+        campos: `
+          <div class="form-grid">
+            <div class="form-group full"><label>Motivo de Consulta / Padecimiento Actual *</label><textarea id="nota-motivo" placeholder="Motivo de consulta y padecimiento actual"></textarea></div>
+            <div class="form-group full"><label>Antecedentes Heredo-Familiares</label><textarea id="extra-ahf" placeholder="Diabetes, hipertensión, cáncer, cardiopatías en familiares directos..."></textarea></div>
+            <div class="form-group full"><label>Antecedentes Personales No Patológicos</label><textarea id="extra-apnp" placeholder="Vivienda, alimentación, higiene, inmunizaciones, actividad física, tabaquismo, alcoholismo, toxicomanías..."></textarea></div>
+            <div class="form-group full"><label>Antecedentes Personales Patológicos</label><textarea id="extra-app" placeholder="Enfermedades previas, cirugías, hospitalizaciones, transfusiones, alergias, traumatismos..."></textarea></div>
+            <div class="form-group full"><label>Antecedentes Gineco-Obstétricos (si aplica)</label><textarea id="extra-ago" placeholder="Menarca, ritmo, FUM, G P A C, FUP, MPF..."></textarea></div>
+            <div class="form-group full"><label>Interrogatorio por Aparatos y Sistemas</label><textarea id="extra-ipas" placeholder="Respiratorio, cardiovascular, digestivo, urinario, musculoesquelético, nervioso, endocrino, piel..."></textarea></div>
+            <div class="form-group full"><label>Exploración Física *</label><textarea id="nota-exploracion" placeholder="Signos vitales: TA, FC, FR, Temp, SpO2, Peso, Talla, IMC. Habitus exterior. Exploración por regiones..."></textarea></div>
+            <div class="form-group"><label>Pronóstico</label><input type="text" id="extra-pronostico" placeholder="Bueno / Reservado / Malo"></div>
+          </div>`
+      },
+      evolucion: {
+        titulo: '📝 Nota de Evolución',
+        campos: `
+          <div class="form-grid">
+            <div class="form-group full"><label>Evolución / Estado Actual *</label><textarea id="nota-motivo" placeholder="Evolución del padecimiento, estado actual del paciente, respuesta al tratamiento..."></textarea></div>
+            <div class="form-group full"><label>Signos Vitales y Exploración Física</label><textarea id="nota-exploracion" placeholder="TA, FC, FR, Temp, SpO2. Hallazgos relevantes de la exploración..."></textarea></div>
+            <div class="form-group full"><label>Resultados de Estudios (si aplica)</label><textarea id="extra-estudios" placeholder="Laboratorios, gabinete, imagen..."></textarea></div>
+          </div>`
+      },
+      postanestesica: {
+        titulo: '💉 Nota Postanestésica',
+        campos: `
+          <div class="form-grid">
+            <div class="form-group full"><label>Procedimiento Realizado *</label><textarea id="nota-motivo" placeholder="Descripción del procedimiento quirúrgico/anestésico realizado"></textarea></div>
+            <div class="form-group"><label>Tipo de Anestesia</label>
+              <select id="extra-tipo-anestesia">
+                <option value="">Seleccionar...</option>
+                <option value="General">General</option>
+                <option value="Regional">Regional</option>
+                <option value="Local">Local</option>
+                <option value="Sedación">Sedación</option>
+                <option value="Bloqueo neuroaxial">Bloqueo neuroaxial</option>
+                <option value="Combinada">Combinada</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Duración de la Anestesia</label><input type="text" id="extra-duracion" placeholder="Ej: 2 horas 30 min"></div>
+            <div class="form-group full"><label>Signos Vitales Postoperatorios</label><textarea id="nota-exploracion" placeholder="TA, FC, FR, Temp, SpO2 al ingreso a recuperación"></textarea></div>
+            <div class="form-group"><label>Escala de Aldrete (0-10)</label><input type="number" id="extra-aldrete" min="0" max="10" placeholder="0-10"></div>
+            <div class="form-group"><label>Escala EVA Dolor (0-10)</label><input type="number" id="extra-eva" min="0" max="10" placeholder="0-10"></div>
+            <div class="form-group full"><label>Complicaciones Anestésicas</label><textarea id="extra-complicaciones" placeholder="Ninguna / Describir complicaciones..."></textarea></div>
+            <div class="form-group full"><label>Plan de Vigilancia Postanestésica</label><textarea id="extra-vigilancia" placeholder="Indicaciones de vigilancia, criterios de alta de recuperación..."></textarea></div>
+          </div>`
+      },
+      urgencias: {
+        titulo: '🚑 Nota de Urgencias',
+        campos: `
+          <div class="form-grid">
+            <div class="form-group full"><label>Motivo de Atención de Urgencia *</label><textarea id="nota-motivo" placeholder="Motivo de ingreso a urgencias"></textarea></div>
+            <div class="form-group"><label>Hora de Llegada</label><input type="text" id="extra-hora-llegada" placeholder="HH:MM"></div>
+            <div class="form-group"><label>Medio de Llegada</label>
+              <select id="extra-medio-llegada">
+                <option value="">Seleccionar...</option>
+                <option value="Propio pie">Propio pie</option>
+                <option value="Ambulancia">Ambulancia</option>
+                <option value="Vehículo particular">Vehículo particular</option>
+                <option value="Referido">Referido de otra unidad</option>
+              </select>
+            </div>
+            <div class="form-group full"><label>Estado al Ingreso / Exploración Física *</label><textarea id="nota-exploracion" placeholder="Signos vitales: TA, FC, FR, Temp, SpO2. Estado de conciencia (Glasgow). Exploración por regiones..."></textarea></div>
+            <div class="form-group full"><label>Triage / Clasificación de Urgencia</label>
+              <select id="extra-triage">
+                <option value="">Seleccionar nivel...</option>
+                <option value="Rojo - Resucitación">🔴 Rojo - Resucitación (inmediato)</option>
+                <option value="Naranja - Emergencia">🟠 Naranja - Emergencia (≤10 min)</option>
+                <option value="Amarillo - Urgencia">🟡 Amarillo - Urgencia (≤60 min)</option>
+                <option value="Verde - Urgencia menor">🟢 Verde - Urgencia menor (≤120 min)</option>
+                <option value="Azul - No urgencia">🔵 Azul - No urgencia (≤240 min)</option>
+              </select>
+            </div>
+            <div class="form-group full"><label>Tratamiento Inicial en Urgencias</label><textarea id="extra-tratamiento-urgencia" placeholder="Medicamentos administrados, procedimientos de urgencia..."></textarea></div>
+            <div class="form-group"><label>Pronóstico</label><input type="text" id="extra-pronostico" placeholder="Bueno / Reservado / Grave"></div>
+            <div class="form-group"><label>Destino del Paciente</label>
+              <select id="extra-destino">
+                <option value="">Seleccionar...</option>
+                <option value="Alta a domicilio">Alta a domicilio</option>
+                <option value="Observación">Observación</option>
+                <option value="Hospitalización">Hospitalización</option>
+                <option value="Quirófano">Quirófano</option>
+                <option value="UCI">Terapia intensiva</option>
+                <option value="Referencia">Referencia a otra unidad</option>
+                <option value="Defunción">Defunción</option>
+              </select>
+            </div>
+          </div>`
+      },
+      enfermeria: {
+        titulo: '👩‍⚕️ Nota de Enfermería',
+        campos: `
+          <div class="form-grid">
+            <div class="form-group full"><label>Valoración de Enfermería / Observaciones *</label><textarea id="nota-motivo" placeholder="Estado general del paciente, habitus exterior, nivel de conciencia, estado emocional..."></textarea></div>
+            <div class="form-group full"><label>Signos Vitales</label><textarea id="nota-exploracion" placeholder="TA, FC, FR, Temp, SpO2, Glucemia capilar, Peso (si aplica)..."></textarea></div>
+            <div class="form-group full"><label>Procedimientos Realizados</label><textarea id="extra-procedimientos" placeholder="Canalización de vía, administración de medicamentos, curaciones, sondas, aspiración de secreciones..."></textarea></div>
+            <div class="form-group full"><label>Medicamentos Administrados</label><textarea id="extra-medicamentos-enf" placeholder="Medicamento, dosis, vía, hora de administración..."></textarea></div>
+            <div class="form-group full"><label>Plan de Cuidados de Enfermería</label><textarea id="extra-plan-cuidados" placeholder="Diagnósticos de enfermería (NANDA), intervenciones (NIC), resultados esperados (NOC)..."></textarea></div>
+            <div class="form-group full"><label>Observaciones Especiales</label><textarea id="extra-observaciones" placeholder="Eventos adversos, caídas, cambios de posición, ingresos/egresos de líquidos..."></textarea></div>
+          </div>`
+      }
+    };
+
+    // Nombres legibles
+    const NOMBRES_TIPO = { primera_vez:'Primera Vez', evolucion:'Evolución', postanestesica:'Postanestésica', urgencias:'Urgencias', enfermeria:'Enfermería' };
+    const COLORES_TIPO = { primera_vez:'#2b6cb0', evolucion:'#dd6b20', postanestesica:'#d69e2e', urgencias:'#e53e3e', enfermeria:'#38a169' };
+    const ICONOS_TIPO = { primera_vez:'📄', evolucion:'📝', postanestesica:'💉', urgencias:'🚑', enfermeria:'👩‍⚕️' };
+
+    // ══════════════════════════════════════════════════
+    //  INIT
+    // ══════════════════════════════════════════════════
+
+    (async function init() {
+      const res = await window.api.obtenerSesion();
+      if (!res.ok) { await window.api.irA('index.html'); return; }
+      const u = res.usuario;
+      let saludo = '';
+      switch(u.titulo) { case 'Dr.': saludo='Dr. '; break; case 'Dra.': saludo='Dra. '; break; case 'Lic.': saludo='Lic. '; break; case 'Sr.': saludo='Sr. '; break; case 'Sra.': saludo='Sra. '; break; }
+      const g = u.sexo === 'F' ? 'a' : 'o';
+      document.getElementById('texto-bienvenida').textContent = `Bienvenid${g}, ${saludo}${u.nombre_completo}`;
+      listarPacientes();
+    })();
+
+    async function cerrarSesion() { await window.api.cerrarSesion(); }
+
+    // ── MODALES ──
+    function abrirModal(id) { document.getElementById(id).classList.add('visible'); initCanvases(); }
+    function cerrarModal(id) {
+      const m = document.getElementById(id); m.classList.remove('visible');
+      m.querySelectorAll('input, textarea').forEach(i => i.value = '');
+      m.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+      m.querySelectorAll('.error-modal').forEach(e => e.style.display = 'none');
+      m.querySelectorAll('canvas').forEach(c => { c.getContext('2d').clearRect(0, 0, c.width, c.height); });
+      cie10Seleccionados = [];
+    }
+
+    // ── CANVAS FIRMA ──
+    const canvasInit = {};
+    function initCanvases() {
+      setTimeout(() => {
+        document.querySelectorAll('.firma-container canvas').forEach(canvas => {
+          if (canvasInit[canvas.id]) { canvasInit[canvas.id] = false; } // Reset for re-init
+          canvas.width = canvas.offsetWidth; canvas.height = 90;
+          const ctx = canvas.getContext('2d');
+          ctx.strokeStyle = '#1a202c'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+          let drawing = false;
+          canvas.onmousedown = e => { drawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); };
+          canvas.onmousemove = e => { if (drawing) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); } };
+          canvas.onmouseup = () => drawing = false;
+          canvas.onmouseleave = () => drawing = false;
+          canvasInit[canvas.id] = true;
+        });
+      }, 150);
+    }
+    function limpiarCanvas(id) { const c = document.getElementById(id); c.getContext('2d').clearRect(0, 0, c.width, c.height); }
+    function obtenerFirma(id) {
+      const c = document.getElementById(id);
+      if (!c) return null;
+      const p = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      for (let i = 3; i < p.length; i += 4) { if (p[i] > 0) return c.toDataURL('image/png'); }
+      return null;
+    }
+
+    // ══════════════════════════════════════════════════
+    //  CIE-10 MULTI-SELECT
+    // ══════════════════════════════════════════════════
+
+    function renderCIE10Dropdown(filtro = '') {
+      const dd = document.getElementById('cie10-dropdown');
+      const f = filtro.toLowerCase();
+      let html = '';
+      CIE10_CATALOGO.forEach(cap => {
+        const filtrados = cap.codigos.filter(c => c.c.toLowerCase().includes(f) || c.d.toLowerCase().includes(f));
+        if (filtrados.length === 0) return;
+        html += `<div class="cie10-chapter">${cap.cap}</div>`;
+        filtrados.forEach(c => {
+          const sel = cie10Seleccionados.some(s => s.c === c.c) ? 'selected' : '';
+          html += `<div class="cie10-option ${sel}" onclick="toggleCIE10('${c.c}','${esc(c.d).replace(/'/g,"\\'")}')"><span><span class="code">${c.c}</span>${esc(c.d)}</span>${sel ? '✓' : ''}</div>`;
+        });
+      });
+      if (!html) html = '<div style="padding:12px; color:#a0aec0; text-align:center;">Sin resultados</div>';
+      dd.innerHTML = html;
+    }
+
+    function toggleCIE10(codigo, descripcion) {
+      const idx = cie10Seleccionados.findIndex(s => s.c === codigo);
+      if (idx >= 0) cie10Seleccionados.splice(idx, 1);
+      else cie10Seleccionados.push({ c: codigo, d: descripcion });
+      renderCIE10Tags();
+      renderCIE10Dropdown(document.getElementById('cie10-search').value);
+    }
+
+    function renderCIE10Tags() {
+      const container = document.getElementById('cie10-selected');
+      const searchInput = document.getElementById('cie10-search');
+      container.innerHTML = '';
+      cie10Seleccionados.forEach(s => {
+        const tag = document.createElement('span');
+        tag.className = 'cie10-tag';
+        tag.innerHTML = `${s.c} <span class="remove" onclick="event.stopPropagation(); toggleCIE10('${s.c}','${s.d.replace(/'/g,"\\'")}')">×</span>`;
+        container.appendChild(tag);
+      });
+      container.appendChild(searchInput);
+    }
+
+    function filtrarCIE10(valor) { renderCIE10Dropdown(valor); abrirDropdownCIE10(); }
+    function abrirDropdownCIE10() { document.getElementById('cie10-dropdown').classList.add('open'); renderCIE10Dropdown(document.getElementById('cie10-search').value); }
+
+    // Cerrar dropdown al hacer clic fuera
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.cie10-container')) document.getElementById('cie10-dropdown')?.classList.remove('open');
+    });
+
+    // ══════════════════════════════════════════════════
+    //  PACIENTES
+    // ══════════════════════════════════════════════════
+
+    async function listarPacientes() {
+      const res = await window.api.listarPacientes();
+      const c = document.getElementById('contenedor-tarjetas');
+      if (!res.ok || res.pacientes.length === 0) {
+        c.innerHTML = '<div class="empty-state"><span>📂</span>No hay expedientes registrados.<br>Use el botón superior para añadir el primero.</div>'; return;
+      }
+      c.innerHTML = res.pacientes.map(r => `
+        <div class="pac-card" onclick="cargarExpediente('${esc(r.folio_interno)}')">
+          <div><strong>${esc(r.nombre)} ${esc(r.primer_apellido)} ${esc(r.segundo_apellido)}</strong>
+          <p>Exp: ${esc(r.folio_interno)} · CURP: ${esc(r.curp)}</p></div>
+          <button class="btn-abrir">Abrir ➜</button>
+        </div>`).join('');
+    }
+
+    async function guardarPaciente() {
+      const d = { folio: document.getElementById('pac-folio').value.trim(), curp: document.getElementById('pac-curp').value.trim().toUpperCase(), nombre: document.getElementById('pac-nombre').value.trim(), paterno: document.getElementById('pac-paterno').value.trim(), materno: document.getElementById('pac-materno').value.trim(), fecha: document.getElementById('pac-fecha').value.trim(), sexo: document.getElementById('pac-sexo').value };
+      const err = document.getElementById('error-paciente');
+      if (!d.folio||!d.curp||!d.nombre||!d.paterno||!d.fecha) { err.textContent='Faltan datos obligatorios.'; err.style.display='block'; return; }
+      const res = await window.api.guardarPaciente(d);
+      if (res.ok) { cerrarModal('modal-paciente'); listarPacientes(); }
+      else { err.textContent = res.error; err.style.display = 'block'; }
+    }
+
+    // ══════════════════════════════════════════════════
+    //  CARGAR EXPEDIENTE
+    // ══════════════════════════════════════════════════
+
+    async function cargarExpediente(folio) {
+      const res = await window.api.buscarPaciente(folio);
+      if (!res.ok) return;
+      folioActivo = folio;
+      const r = res.paciente;
+      const a = r.fecha_nacimiento.substring(0,4), m = r.fecha_nacimiento.substring(4,6), d = r.fecha_nacimiento.substring(6,8);
+
+      document.getElementById('perfil-paciente').innerHTML = `
+        <div class="perfil-row"><div class="avatar">${esc(r.nombre).charAt(0)}</div>
+        <div><h4>${esc(r.nombre)} ${esc(r.primer_apellido)}</h4><p>${r.sexo==='M'?'Femenino':'Masculino'} · ${r.edad} años</p>
+        <p style="font-size:10px; margin-top:2px;">EXP: ${esc(r.folio_interno)}</p></div></div>`;
+
+      document.getElementById('ficha-identificacion').innerHTML = `
+        <div class="ficha-group"><span class="fl">Folio</span><span class="fv">${esc(r.folio_interno)}</span></div>
+        <div class="ficha-group"><span class="fl">CURP</span><span class="fv">${esc(r.curp)}</span></div>
+        <div class="ficha-group"><span class="fl">Paciente</span><span class="fv">${esc(r.nombre)} ${esc(r.primer_apellido)} ${esc(r.segundo_apellido)}</span></div>
+        <div class="ficha-group"><span class="fl">Nacimiento</span><span class="fv">${d}/${m}/${a}</span></div>
+        <div class="ficha-group"><span class="fl">Sexo</span><span class="fv">${r.sexo==='H'?'Hombre':'Mujer'}</span></div>
+        <div class="ficha-group"><span class="fl">Edad</span><span class="fv">${r.edad} años</span></div>`;
+
+      document.getElementById('lista-pacientes-container').style.display = 'none';
+      document.getElementById('vista-expediente').classList.add('visible');
+      document.getElementById('sidebar-nav').style.display = 'none';
+      document.getElementById('acciones-exp').style.display = 'block';
+      cambiarTab('notas');
+    }
+
+    function mostrarListaPacientes() {
+      document.getElementById('lista-pacientes-container').style.display = 'block';
+      document.getElementById('vista-expediente').classList.remove('visible');
+      document.getElementById('sidebar-nav').style.display = 'block';
+      document.getElementById('acciones-exp').style.display = 'none';
+      folioActivo = null; notasCache = []; notaSeleccionada = null;
+      document.getElementById('perfil-paciente').innerHTML = `<div class="perfil-row"><div class="avatar">?</div><div><h4>Seleccione Paciente</h4><p>Busque un paciente</p></div></div>`;
+    }
+
+    // ══════════════════════════════════════════════════
+    //  TABS
+    // ══════════════════════════════════════════════════
+
+    function cambiarTab(tab) {
+      tabActivo = tab;
+      document.querySelectorAll('.exp-tab').forEach(t => t.classList.toggle('activo', t.dataset.tab === tab));
+      document.getElementById('timeline-section').style.display = (tab === 'notas') ? 'block' : 'none';
+      if (tab === 'notas') cargarNotas();
+      else if (tab === 'consentimientos') cargarConsentimientos();
+      else if (tab === 'recetas') cargarRecetas();
+      else if (tab === 'auditoria') cargarAuditoria();
+    }
+
+    // ══════════════════════════════════════════════════
+    //  NOTAS CLÍNICAS + TIMELINE
+    // ══════════════════════════════════════════════════
+
+    function abrirModalNotaTipo(tipo) {
+      if (!folioActivo) return;
+      const config = CAMPOS_POR_TIPO[tipo];
+      if (!config) return;
+      document.getElementById('nota-tipo').value = tipo;
+      document.getElementById('modal-nota-titulo').textContent = config.titulo;
+      document.getElementById('campos-dinamicos-nota').innerHTML = config.campos;
+      cie10Seleccionados = [];
+      renderCIE10Tags();
+      abrirModal('modal-nota');
+    }
+
+    async function guardarNota() {
+      const err = document.getElementById('error-nota');
+      const tipo = document.getElementById('nota-tipo').value;
+      const motivo = document.getElementById('nota-motivo')?.value.trim();
+      const exploracion = document.getElementById('nota-exploracion')?.value.trim() || '';
+
+      if (!motivo) { err.textContent='El campo principal es obligatorio.'; err.style.display='block'; return; }
+      if (cie10Seleccionados.length === 0) { err.textContent='Seleccione al menos un diagnóstico CIE-10.'; err.style.display='block'; return; }
+
+      const diagnosticoStr = cie10Seleccionados.map(s => `${s.c}: ${s.d}`).join(' | ');
+
+      // Recopilar campos extra
+      const camposExtra = {};
+      document.querySelectorAll('#campos-dinamicos-nota [id^="extra-"]').forEach(el => {
+        const key = el.id.replace('extra-', '');
+        camposExtra[key] = el.value?.trim() || '';
+      });
+
+      const res = await window.api.guardarNota({
+        folio_paciente: folioActivo, tipo_nota: tipo, motivo_consulta: motivo,
+        exploracion_fisica: exploracion, diagnostico_principal_cie10: diagnosticoStr,
+        plan_tratamiento: document.getElementById('nota-plan')?.value.trim() || '',
+        firma_profesional: obtenerFirma('firma-nota-canvas') || '',
+        campos_extra: camposExtra,
+      });
+      if (res.ok) { cerrarModal('modal-nota'); cargarNotas(); }
+      else { err.textContent = res.error; err.style.display = 'block'; }
+    }
+
+    async function cargarNotas() {
+      const res = await window.api.obtenerNotas(folioActivo);
+      notasCache = res.ok ? res.notas : [];
+      renderTimeline();
+      if (notasCache.length === 0) {
+        document.getElementById('detail-panel').innerHTML = '<div class="empty-state"><span>📝</span>No hay notas clínicas aún.<br>Use el menú lateral para crear la primera nota.</div>';
+        notaSeleccionada = null;
+      } else { seleccionarNota(notasCache.length - 1); }
+    }
+
+    const coloresNota = ['#2b6cb0','#dd6b20','#d69e2e','#e53e3e','#38a169','#805ad5','#d53f8c'];
+    function colorPorIndice(i) { return coloresNota[i % coloresNota.length]; }
+
+    function renderTimeline() {
+      const track = document.getElementById('timeline-track');
+      if (notasCache.length === 0) {
+        track.innerHTML = `<div class="tl-item" onclick="abrirModalNotaTipo('evolucion')"><div class="tl-date">Hoy</div><div class="tl-circle bg-add" style="font-size:22px;">+</div><div class="tl-label">Añadir Nota</div></div>`;
+        document.getElementById('timeline-periodo').textContent = ''; return;
+      }
+      const primera = new Date(notasCache[0].fecha_creacion);
+      const ultima = new Date(notasCache[notasCache.length-1].fecha_creacion);
+      document.getElementById('timeline-periodo').textContent = `${primera.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})} — ${ultima.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})}`;
+
+      let html = '';
+      notasCache.forEach((n, i) => {
+        const f = new Date(n.fecha_creacion);
+        const fechaStr = f.toLocaleDateString('es-MX', { day:'2-digit', month:'2-digit', year:'2-digit' });
+        const tipo = n.tipo_nota || 'evolucion';
+        const color = COLORES_TIPO[tipo] || colorPorIndice(i);
+        const icono = ICONOS_TIPO[tipo] || '📝';
+        const selected = (notaSeleccionada === i) ? 'selected' : '';
+        const diagCorto = (n.diagnostico_principal_cie10 || '').substring(0, 12);
+        const tipoNombre = NOMBRES_TIPO[tipo] || tipo;
+
+        html += `<div class="tl-item ${selected}" onclick="seleccionarNota(${i})" id="tl-item-${i}">
+          <div class="tl-date">${fechaStr}</div>
+          <div class="tl-circle" style="background:${color}; font-size:18px;">${icono}</div>
+          <div class="tl-label">${esc(diagCorto)}</div>
+          <div class="tl-tipo">${tipoNombre}</div>
+          <div class="tl-author">${esc((n.nombre_creador||'').split(' ')[0])}</div>
+        </div>`;
+      });
+      html += `<div class="tl-item" onclick="abrirModalNotaTipo('evolucion')"><div class="tl-date">Nuevo</div><div class="tl-circle bg-add" style="font-size:22px;">+</div><div class="tl-label">Añadir Nota</div></div>`;
+      track.innerHTML = html;
+    }
+
+    function seleccionarNota(idx) {
+      notaSeleccionada = idx;
+      document.querySelectorAll('.tl-item').forEach((el, i) => el.classList.toggle('selected', i === idx));
+      const el = document.getElementById('tl-item-' + idx);
+      if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      renderDetalleNota(notasCache[idx]);
+    }
+
+    function renderDetalleNota(n) {
+      const f = new Date(n.fecha_creacion);
+      const tipo = n.tipo_nota || 'evolucion';
+      const tipoNombre = NOMBRES_TIPO[tipo] || tipo;
+      const tipoColor = COLORES_TIPO[tipo] || '#4a5568';
+      let extras = {};
+      try { extras = n.campos_extra ? JSON.parse(n.campos_extra) : {}; } catch(e) {}
+
+      let html = `
+        <div class="detail-header">
+          <div>
+            <h2><span class="tipo-nota-badge" style="background:${tipoColor}22; color:${tipoColor};">${tipoNombre}</span> ${esc(n.diagnostico_principal_cie10?.split('|')[0] || '')}</h2>
+            <p>Fecha: ${f.toLocaleString('es-MX')} · Responsable: ${esc(n.nombre_creador)} · Céd: ${esc(n.cedula_profesional||'N/A')}</p>
+          </div>
+          <span class="detail-badge" title="Hash SHA-256">🔒 ${n.hash_nota.substring(0,20)}...</span>
+        </div>`;
+
+      // Campos principales
+      html += `<div class="detail-section"><h4>${tipo === 'primera_vez' ? 'Motivo de Consulta / Padecimiento Actual' : tipo === 'urgencias' ? 'Motivo de Atención' : tipo === 'enfermeria' ? 'Valoración de Enfermería' : tipo === 'postanestesica' ? 'Procedimiento Realizado' : 'Evolución / Estado Actual'}</h4><p>${esc(n.motivo_consulta)}</p></div>`;
+
+      // Campos extra según tipo
+      if (tipo === 'primera_vez') {
+        if (extras.ahf) html += `<div class="detail-section"><h4>Antecedentes Heredo-Familiares</h4><p>${esc(extras.ahf)}</p></div>`;
+        if (extras.apnp) html += `<div class="detail-section"><h4>Antecedentes Personales No Patológicos</h4><p>${esc(extras.apnp)}</p></div>`;
+        if (extras.app) html += `<div class="detail-section"><h4>Antecedentes Personales Patológicos</h4><p>${esc(extras.app)}</p></div>`;
+        if (extras.ago) html += `<div class="detail-section"><h4>Antecedentes Gineco-Obstétricos</h4><p>${esc(extras.ago)}</p></div>`;
+        if (extras.ipas) html += `<div class="detail-section"><h4>Interrogatorio por Aparatos y Sistemas</h4><p>${esc(extras.ipas)}</p></div>`;
+      }
+      if (tipo === 'postanestesica') {
+        if (extras['tipo-anestesia']) html += `<div class="detail-section"><h4>Tipo de Anestesia</h4><p>${esc(extras['tipo-anestesia'])}</p></div>`;
+        if (extras.duracion) html += `<div class="detail-section"><h4>Duración</h4><p>${esc(extras.duracion)}</p></div>`;
+        if (extras.aldrete) html += `<div class="detail-section"><h4>Escala de Aldrete</h4><p>${esc(extras.aldrete)}/10</p></div>`;
+        if (extras.eva) html += `<div class="detail-section"><h4>EVA Dolor</h4><p>${esc(extras.eva)}/10</p></div>`;
+        if (extras.complicaciones) html += `<div class="detail-section"><h4>Complicaciones</h4><p>${esc(extras.complicaciones)}</p></div>`;
+        if (extras.vigilancia) html += `<div class="detail-section"><h4>Plan de Vigilancia</h4><p>${esc(extras.vigilancia)}</p></div>`;
+      }
+      if (tipo === 'urgencias') {
+        if (extras['hora-llegada']) html += `<div class="detail-section"><h4>Hora de Llegada</h4><p>${esc(extras['hora-llegada'])}</p></div>`;
+        if (extras['medio-llegada']) html += `<div class="detail-section"><h4>Medio de Llegada</h4><p>${esc(extras['medio-llegada'])}</p></div>`;
+        if (extras.triage) html += `<div class="detail-section"><h4>Triage</h4><p>${esc(extras.triage)}</p></div>`;
+        if (extras['tratamiento-urgencia']) html += `<div class="detail-section"><h4>Tratamiento Inicial</h4><p>${esc(extras['tratamiento-urgencia'])}</p></div>`;
+        if (extras.destino) html += `<div class="detail-section"><h4>Destino del Paciente</h4><p>${esc(extras.destino)}</p></div>`;
+      }
+      if (tipo === 'evolucion') {
+        if (extras.estudios) html += `<div class="detail-section"><h4>Resultados de Estudios</h4><p>${esc(extras.estudios)}</p></div>`;
+      }
+      if (tipo === 'enfermeria') {
+        if (extras.procedimientos) html += `<div class="detail-section"><h4>Procedimientos Realizados</h4><p>${esc(extras.procedimientos)}</p></div>`;
+        if (extras['medicamentos-enf']) html += `<div class="detail-section"><h4>Medicamentos Administrados</h4><p>${esc(extras['medicamentos-enf'])}</p></div>`;
+        if (extras['plan-cuidados']) html += `<div class="detail-section"><h4>Plan de Cuidados</h4><p>${esc(extras['plan-cuidados'])}</p></div>`;
+        if (extras.observaciones) html += `<div class="detail-section"><h4>Observaciones</h4><p>${esc(extras.observaciones)}</p></div>`;
+      }
+      if (extras.pronostico) html += `<div class="detail-section"><h4>Pronóstico</h4><p>${esc(extras.pronostico)}</p></div>`;
+
+      if (n.exploracion_fisica) html += `<div class="detail-section"><h4>Exploración Física / Signos Vitales</h4><p>${esc(n.exploracion_fisica)}</p></div>`;
+
+      // Diagnósticos CIE-10
+      html += `<div class="detail-section"><h4>Diagnóstico(s) CIE-10</h4>`;
+      const diags = (n.diagnostico_principal_cie10 || '').split(' | ');
+      diags.forEach(d => { html += `<span class="tipo-nota-badge" style="background:#ebf8ff; color:#2b6cb0; margin:2px 4px 2px 0; display:inline-block;">${esc(d)}</span>`; });
+      html += `</div>`;
+
+      if (n.plan_tratamiento) html += `<div class="detail-section"><h4>Plan de Tratamiento</h4><p>${esc(n.plan_tratamiento)}</p></div>`;
+      if (n.firma_profesional) html += `<div class="detail-section"><h4>Firma del Profesional</h4><img src="${n.firma_profesional}" style="max-height:80px; border:1px solid #e2e8f0; border-radius:6px; padding:4px;"></div>`;
+
+      document.getElementById('detail-panel').innerHTML = html;
+    }
+
+    // ══════════════════════════════════════════════════
+    //  CONSENTIMIENTOS
+    // ══════════════════════════════════════════════════
+
+    async function guardarConsentimiento() {
+      const err = document.getElementById('error-consentimiento');
+      const tipo = document.getElementById('cons-tipo').value.trim();
+      const desc = document.getElementById('cons-descripcion').value.trim();
+      const riesgos = document.getElementById('cons-riesgos').value.trim();
+      const nombrePac = document.getElementById('cons-nombre-paciente').value.trim();
+      const nombreT1 = document.getElementById('cons-nombre-testigo1').value.trim();
+      const nombreT2 = document.getElementById('cons-nombre-testigo2').value.trim();
+      if (!tipo||!desc||!riesgos||!nombrePac||!nombreT1||!nombreT2) { err.textContent='Llena todos los campos obligatorios.'; err.style.display='block'; return; }
+      const fP = obtenerFirma('firma-paciente-canvas'), fM = obtenerFirma('firma-medico-cons-canvas'), f1 = obtenerFirma('firma-testigo1-canvas'), f2 = obtenerFirma('firma-testigo2-canvas');
+      if (!fP||!fM||!f1||!f2) { err.textContent='Se requieren las 4 firmas.'; err.style.display='block'; return; }
+      const res = await window.api.guardarConsentimiento({
+        folio_paciente: folioActivo, tipo_procedimiento: tipo, descripcion_procedimiento: desc, riesgos,
+        beneficios: document.getElementById('cons-beneficios').value.trim(), alternativas: document.getElementById('cons-alternativas').value.trim(),
+        firma_paciente: fP, nombre_paciente_firmante: nombrePac, firma_testigo1: f1, nombre_testigo1: nombreT1, firma_testigo2: f2, nombre_testigo2: nombreT2, firma_medico: fM,
+      });
+      if (res.ok) { cerrarModal('modal-consentimiento'); cambiarTab('consentimientos'); }
+      else { err.textContent = res.error; err.style.display = 'block'; }
+    }
+
+    async function cargarConsentimientos() {
+      const res = await window.api.obtenerConsentimientos(folioActivo);
+      const panel = document.getElementById('detail-panel');
+      if (!res.ok || res.consentimientos.length === 0) { panel.innerHTML = '<div class="empty-state"><span>✍️</span>No hay consentimientos informados.</div>'; return; }
+      let html = '<h3 style="margin-bottom:15px; color:#1a365d;">Consentimientos Informados</h3>';
+      html += '<table class="tabla-simple"><thead><tr><th>Fecha</th><th>Procedimiento</th><th>Paciente</th><th>Testigo 1</th><th>Testigo 2</th><th>Médico</th><th>Hash</th></tr></thead><tbody>';
+      res.consentimientos.forEach(c => {
+        html += `<tr><td>${new Date(c.fecha_creacion).toLocaleDateString('es-MX')}</td><td><strong>${esc(c.tipo_procedimiento)}</strong></td><td>✅ ${esc(c.nombre_paciente_firmante)}</td><td>✅ ${esc(c.nombre_testigo1)}</td><td>✅ ${esc(c.nombre_testigo2)}</td><td>✅ ${esc(c.nombre_medico)}</td><td><span class="detail-badge">${c.hash_documento.substring(0,12)}…</span></td></tr>`;
+      });
+      html += '</tbody></table>';
+      panel.innerHTML = html;
+    }
+
+    // ══════════════════════════════════════════════════
+    //  RECETAS
+    // ══════════════════════════════════════════════════
+
+    async function guardarReceta() {
+      const err = document.getElementById('error-receta');
+      const diag = document.getElementById('receta-diagnostico').value.trim();
+      const meds = document.getElementById('receta-medicamentos').value.trim();
+      if (!diag||!meds) { err.textContent='Diagnóstico y medicamentos obligatorios.'; err.style.display='block'; return; }
+      const res = await window.api.guardarReceta({
+        folio_paciente: folioActivo, diagnostico: diag, medicamentos: meds,
+        indicaciones: document.getElementById('receta-indicaciones').value.trim(),
+        tipo_receta: document.getElementById('receta-tipo').value,
+        firma_medico: obtenerFirma('firma-receta-canvas') || '',
+      });
+      if (res.ok) { cerrarModal('modal-receta'); cambiarTab('recetas'); }
+      else { err.textContent = res.error; err.style.display = 'block'; }
+    }
+
+    async function cargarRecetas() {
+      const res = await window.api.obtenerRecetas(folioActivo);
+      const panel = document.getElementById('detail-panel');
+      if (!res.ok || res.recetas.length === 0) { panel.innerHTML = '<div class="empty-state"><span>💊</span>No hay recetas médicas.</div>'; return; }
+      let html = '<h3 style="margin-bottom:15px; color:#1a365d;">Recetas Médicas</h3>';
+      html += '<table class="tabla-simple"><thead><tr><th>Fecha</th><th>Diagnóstico</th><th>Medicamentos</th><th>Tipo</th><th>Médico</th><th>Cédula</th></tr></thead><tbody>';
+      res.recetas.forEach(r => {
+        const badge = r.tipo_receta === 'antibiotico' ? '<span style="color:#e53e3e;font-weight:700;">🔴 Antibiótico</span>' : '🟢 General';
+        html += `<tr><td>${new Date(r.fecha_creacion).toLocaleDateString('es-MX')}</td><td>${esc(r.diagnostico)}</td><td>${esc(r.medicamentos)}</td><td>${badge}</td><td>${esc(r.nombre_medico)}</td><td>${esc(r.cedula_medico)}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      if (res.recetas.some(r => r.tipo_receta === 'antibiotico')) {
+        html += '<div style="background:#fff5f5; border:1px solid #feb2b2; border-radius:8px; padding:12px; margin-top:15px; font-size:12px; color:#742a2a;"><strong>⚠️ AVISO LEGAL:</strong> Las recetas de antibióticos requieren firma autógrafa original según la farmacopea mexicana.</div>';
+      }
+      panel.innerHTML = html;
+    }
+
+    // ══════════════════════════════════════════════════
+    //  VERIFICAR INTEGRIDAD
+    // ════════════════════════════════════════════��═════
+
+    async function verificarIntegridad() {
+      if (!folioActivo) return;
+      const res = await window.api.verificarIntegridadNotas(folioActivo);
+      const panel = document.getElementById('detail-panel');
+      document.querySelectorAll('.exp-tab').forEach(t => t.classList.remove('activo'));
+      document.getElementById('timeline-section').style.display = 'none';
+      if (res.ok && res.integro) {
+        panel.innerHTML = `<div class="integridad-ok">✅ INTEGRIDAD VERIFICADA<br><span style="font-weight:normal; font-size:13px;">${res.total_notas} nota(s) verificada(s). Cadena SHA-256 íntegra.</span></div>`;
+      } else if (res.ok && !res.integro) {
+        panel.innerHTML = `<div class="integridad-error">❌ ALERTA: INTEGRIDAD COMPROMETIDA<br><span style="font-weight:normal; font-size:13px;">${res.mensaje}</span></div>`;
+      }
+    }
+
+    // ══════════════════════════════════════════════════
+    //  EXPORTAR + AUDITORÍA
+    // ══════════════════════════════════════════════════
+
+    async function exportarExpediente() {
+      if (!folioActivo) return;
+      const res = await window.api.exportarExpediente(folioActivo);
+      if (res.ok) alert('Expediente exportado en:\n' + res.ruta);
+    }
+
+    async function cargarAuditoria() {
+      const res = await window.api.obtenerAuditoria(folioActivo);
+      const panel = document.getElementById('detail-panel');
+      if (!res.ok || res.registros.length === 0) { panel.innerHTML = '<div class="empty-state"><span>🔒</span>No hay registros de auditoría.</div>'; return; }
+      let html = '<h3 style="margin-bottom:15px; color:#1a365d;">Registro de Auditoría (NOM-024)</h3>';
+      html += '<table class="tabla-simple"><thead><tr><th>Fecha / Hora</th><th>Acción</th><th>Usuario</th><th>Detalles</th></tr></thead><tbody>';
+      res.registros.forEach(r => {
+        html += `<tr><td>${new Date(r.fecha_hora).toLocaleString('es-MX')}</td><td><strong>${esc(r.accion_realizada)}</strong></td><td>${esc(r.nombre_completo)}</td><td style="font-size:11px; font-family:monospace;">${esc(r.detalles)||'—'}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      panel.innerHTML = html;
+    }
+  </script>
+</body>
+</html>
