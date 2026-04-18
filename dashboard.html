@@ -1,0 +1,1710 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';" />
+  <title>Historia Clínica Electrónica — NOM-004-SSA3-2012</title>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #1565c0;
+      --primary-dark: #003c8f;
+      --primary-light: #5e92f3;
+      --secondary: #00897b;
+      --danger: #c62828;
+      --warning: #f57f17;
+      --success: #2e7d32;
+      --bg: #f4f6fa;
+      --card: #ffffff;
+      --border: #dde3f0;
+      --text: #1a1a2e;
+      --text-muted: #6b778c;
+      --radius: 10px;
+      --shadow: 0 2px 12px rgba(0,0,0,.10);
+      --font: 'Segoe UI', system-ui, sans-serif;
+    }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Layout ───────────────────────────────────────────────── */
+    #app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    header {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+      color: #fff; padding: 0 24px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25); z-index: 100; flex-shrink: 0;
+    }
+    header h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: .3px; }
+    header .subtitle { font-size: .75rem; opacity: .8; }
+    main { display: flex; flex: 1; overflow: hidden; }
+    aside {
+      width: 300px; background: var(--card); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden;
+    }
+    #content { flex: 1; overflow-y: auto; padding: 24px; }
+
+    /* ── Sidebar ─────────────────────────────────────────────── */
+    .sidebar-header {
+      padding: 16px; border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .sidebar-header h2 { font-size: .9rem; color: var(--text-muted); margin-bottom: 8px; }
+    .search-box { position: relative; }
+    .search-box input {
+      width: 100%; padding: 8px 12px 8px 36px; border: 1px solid var(--border);
+      border-radius: 20px; font-size: .875rem; outline: none;
+      transition: border-color .2s;
+    }
+    .search-box input:focus { border-color: var(--primary); }
+    .search-box::before {
+      content: '🔍'; position: absolute; left: 10px; top: 50%;
+      transform: translateY(-50%); font-size: .85rem;
+    }
+    .sidebar-actions { padding: 8px 16px; border-bottom: 1px solid var(--border); }
+    #btn-nuevo-paciente {
+      width: 100%; padding: 8px; border: none; border-radius: var(--radius);
+      background: var(--primary); color: #fff; font-size: .875rem;
+      cursor: pointer; font-weight: 600; transition: background .2s;
+    }
+    #btn-nuevo-paciente:hover { background: var(--primary-dark); }
+    #lista-pacientes { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .paciente-item {
+      padding: 10px 16px; cursor: pointer; transition: background .15s;
+      border-left: 3px solid transparent;
+    }
+    .paciente-item:hover { background: #e8eaf6; }
+    .paciente-item.active { background: #e3f2fd; border-left-color: var(--primary); }
+    .paciente-item .pac-nombre { font-weight: 600; font-size: .875rem; }
+    .paciente-item .pac-info { font-size: .75rem; color: var(--text-muted); }
+    .empty-list { padding: 24px; text-align: center; color: var(--text-muted); font-size: .875rem; }
+
+    /* ── Content area ────────────────────────────────────────── */
+    .welcome-card {
+      background: var(--card); border-radius: var(--radius);
+      padding: 48px; text-align: center; box-shadow: var(--shadow);
+    }
+    .welcome-card h2 { color: var(--primary); font-size: 1.5rem; margin-bottom: 8px; }
+    .welcome-card p { color: var(--text-muted); }
+
+    /* ── Patient view ────────────────────────────────────────── */
+    .pac-header {
+      background: var(--card); border-radius: var(--radius);
+      padding: 20px 24px; margin-bottom: 20px; box-shadow: var(--shadow);
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .pac-header-info h2 { font-size: 1.25rem; color: var(--primary-dark); }
+    .pac-header-info p { font-size: .875rem; color: var(--text-muted); }
+    .pac-header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      padding: 8px 16px; border: none; border-radius: var(--radius);
+      font-size: .875rem; cursor: pointer; font-weight: 600;
+      transition: opacity .2s, transform .1s; display: inline-flex;
+      align-items: center; gap: 6px;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary { background: var(--secondary); color: #fff; }
+    .btn-secondary:hover { opacity: .85; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { opacity: .85; }
+    .btn-outline {
+      background: transparent; color: var(--primary);
+      border: 1.5px solid var(--primary);
+    }
+    .btn-outline:hover { background: #e3f2fd; }
+    .btn-sm { padding: 5px 12px; font-size: .8rem; }
+
+    /* ── Notes toolbar ───────────────────────────────────────── */
+    .notes-toolbar {
+      background: var(--card); border-radius: var(--radius);
+      padding: 16px 20px; margin-bottom: 20px; box-shadow: var(--shadow);
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    .notes-toolbar span { font-size: .875rem; color: var(--text-muted); margin-right: 4px; }
+    .nota-type-btn {
+      padding: 7px 14px; border: 1.5px solid var(--border);
+      border-radius: 20px; background: #fff; font-size: .8rem;
+      cursor: pointer; font-weight: 600; color: var(--text);
+      transition: all .2s; white-space: nowrap;
+    }
+    .nota-type-btn:hover, .nota-type-btn.active {
+      background: var(--primary); color: #fff; border-color: var(--primary);
+    }
+
+    /* ── Notes list ──────────────────────────────────────────── */
+    .notes-list { display: flex; flex-direction: column; gap: 12px; }
+    .nota-card {
+      background: var(--card); border-radius: var(--radius);
+      padding: 16px 20px; box-shadow: var(--shadow);
+      cursor: pointer; transition: box-shadow .2s, transform .15s;
+      border-left: 4px solid transparent;
+    }
+    .nota-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.15); transform: translateY(-1px); }
+    .nota-card.primera_vez { border-left-color: var(--primary); }
+    .nota-card.evolucion { border-left-color: var(--secondary); }
+    .nota-card.postanestesica { border-left-color: #7b1fa2; }
+    .nota-card.urgencias { border-left-color: var(--danger); }
+    .nota-card.enfermeria { border-left-color: #e65100; }
+    .nota-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .nota-tipo-badge {
+      padding: 3px 10px; border-radius: 12px; font-size: .75rem;
+      font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+    }
+    .badge-primera_vez { background: #e3f2fd; color: var(--primary); }
+    .badge-evolucion { background: #e0f2f1; color: var(--secondary); }
+    .badge-postanestesica { background: #f3e5f5; color: #7b1fa2; }
+    .badge-urgencias { background: #ffebee; color: var(--danger); }
+    .badge-enfermeria { background: #fff3e0; color: #e65100; }
+    .nota-fecha { font-size: .8rem; color: var(--text-muted); }
+    .nota-medico { font-size: .8rem; color: var(--text-muted); }
+    .nota-dx { font-size: .8rem; color: var(--text); margin-top: 4px; }
+    .nota-actions { display: flex; gap: 6px; margin-top: 10px; }
+
+    /* ── Modals ──────────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      display: none; align-items: flex-start; justify-content: center;
+      z-index: 1000; overflow-y: auto; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--card); border-radius: 14px;
+      width: 100%; max-width: 860px; box-shadow: 0 8px 40px rgba(0,0,0,.25);
+      margin: auto; position: relative;
+    }
+    .modal-header {
+      padding: 20px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      border-radius: 14px 14px 0 0; color: #fff;
+    }
+    .modal-header h3 { font-size: 1.05rem; font-weight: 700; }
+    .modal-close {
+      background: rgba(255,255,255,.2); border: none; color: #fff;
+      width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+      font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+      transition: background .2s;
+    }
+    .modal-close:hover { background: rgba(255,255,255,.35); }
+    .modal-body { padding: 24px; max-height: 75vh; overflow-y: auto; }
+    .modal-footer {
+      padding: 16px 24px; border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 10px;
+      background: var(--bg); border-radius: 0 0 14px 14px;
+    }
+
+    /* ── Form elements ───────────────────────────────────────── */
+    .form-section {
+      margin-bottom: 20px; background: var(--bg);
+      border-radius: var(--radius); padding: 16px;
+      border: 1px solid var(--border);
+    }
+    .form-section-title {
+      font-size: .85rem; font-weight: 700; color: var(--primary);
+      text-transform: uppercase; letter-spacing: .5px;
+      margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+    }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: .8rem; font-weight: 600; color: var(--text-muted); }
+    input[type="text"], input[type="date"], input[type="time"],
+    input[type="number"], input[type="email"], select, textarea {
+      padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;
+      font-size: .875rem; font-family: var(--font); color: var(--text);
+      background: #fff; outline: none; transition: border-color .2s, box-shadow .2s;
+      width: 100%;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(21,101,192,.12);
+    }
+    textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+    .required { color: var(--danger); }
+
+    /* ── CIE-10 Multi-select ─────────────────────────────────── */
+    .cie10-container {
+      border: 1px solid var(--border); border-radius: 8px;
+      background: #fff; padding: 10px;
+    }
+    .cie10-search {
+      width: 100%; padding: 7px 12px; border: 1px solid var(--border);
+      border-radius: 6px; font-size: .875rem; margin-bottom: 8px; outline: none;
+    }
+    .cie10-search:focus { border-color: var(--primary); }
+    .cie10-dropdown {
+      border: 1px solid var(--border); border-radius: 6px;
+      max-height: 200px; overflow-y: auto; background: #fff;
+      display: none; margin-bottom: 8px;
+    }
+    .cie10-dropdown.show { display: block; }
+    .cie10-option {
+      padding: 7px 12px; cursor: pointer; font-size: .8rem;
+      transition: background .15s; display: flex; align-items: center; gap: 8px;
+    }
+    .cie10-option:hover { background: #e3f2fd; }
+    .cie10-option.selected { background: #bbdefb; }
+    .cie10-option .code { font-weight: 700; color: var(--primary); min-width: 70px; }
+    .cie10-tags {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      min-height: 36px; padding: 4px 0;
+    }
+    .cie10-tag {
+      background: var(--primary); color: #fff;
+      padding: 3px 10px; border-radius: 12px; font-size: .78rem;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .cie10-tag .tag-remove {
+      cursor: pointer; font-weight: 700; opacity: .8;
+      background: none; border: none; color: #fff; padding: 0 2px; line-height: 1;
+    }
+    .cie10-tag .tag-remove:hover { opacity: 1; }
+    .cie10-hint { font-size: .75rem; color: var(--text-muted); }
+
+    /* ── Signos Vitales grid ─────────────────────────────────── */
+    .sv-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 10px;
+    }
+
+    /* ── Integrity panel ─────────────────────────────────────── */
+    .integrity-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: .85rem; }
+    .integrity-ok { color: var(--success); }
+    .integrity-fail { color: var(--danger); }
+
+    /* ── Toast ───────────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--text); color: #fff; padding: 12px 20px;
+      border-radius: 8px; font-size: .875rem; box-shadow: var(--shadow);
+      z-index: 9999; display: none; max-width: 340px;
+    }
+    #toast.show { display: block; animation: slideIn .3s ease; }
+    #toast.success { background: var(--success); }
+    #toast.error { background: var(--danger); }
+    @keyframes slideIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to   { transform: translateY(0);   opacity: 1; }
+    }
+
+    /* ── Misc ─────────────────────────────────────────────────── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+    .text-muted { color: var(--text-muted); font-size: .8rem; }
+    .flex-row { display: flex; gap: 10px; align-items: center; }
+    .integrity-btn { margin-left: auto; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #bdc8e0; border-radius: 3px; }
+
+    /* Scale range labels */
+    .scale-row { display: flex; align-items: center; gap: 8px; }
+    .scale-row input[type=range] { flex: 1; }
+    .scale-val { min-width: 30px; text-align: center; font-weight: 700; color: var(--primary); }
+
+    @media (max-width: 768px) {
+      aside { width: 200px; }
+      .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ HEADER ═══════════════════════════════════════════════════════════ -->
+  <header>
+    <div>
+      <div class="subtitle">Sistema de</div>
+      <h1>Historia Clínica Electrónica &nbsp;·&nbsp; NOM-004-SSA3-2012</h1>
+    </div>
+    <div style="font-size:.8rem;opacity:.7;">v1.0.0</div>
+  </header>
+
+  <main>
+
+    <!-- ══ SIDEBAR ══════════════════════════════════════════════════════════ -->
+    <aside>
+      <div class="sidebar-header">
+        <h2>Pacientes</h2>
+        <div class="search-box">
+          <input id="buscar-input" type="text" placeholder="Buscar paciente…" autocomplete="off" />
+        </div>
+      </div>
+      <div class="sidebar-actions">
+        <button id="btn-nuevo-paciente">+ Nuevo Paciente</button>
+      </div>
+      <div id="lista-pacientes">
+        <div class="empty-list">Sin pacientes registrados.<br/>Haz clic en "Nuevo Paciente".</div>
+      </div>
+    </aside>
+
+    <!-- ══ CONTENT ═══════════════════════════════════════════════════════════ -->
+    <section id="content">
+      <div id="welcome" class="welcome-card">
+        <h2>Bienvenido al Sistema de Historia Clínica</h2>
+        <p>Selecciona un paciente o crea uno nuevo para comenzar.</p>
+        <p class="text-muted" style="margin-top:8px;">NOM-004-SSA3-2012 &mdash; Del expediente clínico</p>
+      </div>
+      <div id="paciente-view" style="display:none;"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ══ TOAST ═══════════════════════════════════════════════════════════════ -->
+<div id="toast"></div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════════╗
+     ║  MODAL: NUEVO / EDITAR PACIENTE                                     ║
+     ╚══════════════════════════════════════════════════════════════════════╝ -->
+<div id="modal-paciente" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-paciente-title">Nuevo Paciente</h3>
+      <button class="modal-close" data-close="modal-paciente">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="pac-id" />
+      <div class="form-section">
+        <div class="form-section-title">👤 Datos de Identificación</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nombre(s) <span class="required">*</span></label>
+            <input type="text" id="pac-nombre" placeholder="Nombre(s)" required />
+          </div>
+          <div class="form-group">
+            <label>Apellido Paterno <span class="required">*</span></label>
+            <input type="text" id="pac-ap-paterno" placeholder="Apellido paterno" required />
+          </div>
+          <div class="form-group">
+            <label>Apellido Materno</label>
+            <input type="text" id="pac-ap-materno" placeholder="Apellido materno" />
+          </div>
+          <div class="form-group">
+            <label>Fecha de Nacimiento</label>
+            <input type="date" id="pac-fecha-nac" />
+          </div>
+          <div class="form-group">
+            <label>Sexo</label>
+            <select id="pac-sexo">
+              <option value="">— Seleccionar —</option>
+              <option value="M">Masculino</option>
+              <option value="F">Femenino</option>
+              <option value="I">Indeterminado</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Grupo Sanguíneo</label>
+            <select id="pac-grupo-sang">
+              <option value="">— Seleccionar —</option>
+              <option>A+</option><option>A-</option>
+              <option>B+</option><option>B-</option>
+              <option>AB+</option><option>AB-</option>
+              <option>O+</option><option>O-</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>CURP</label>
+            <input type="text" id="pac-curp" placeholder="CURP" maxlength="18" style="text-transform:uppercase;" />
+          </div>
+          <div class="form-group">
+            <label>NSS (IMSS/ISSSTE)</label>
+            <input type="text" id="pac-nss" placeholder="Número de seguridad social" />
+          </div>
+          <div class="form-group">
+            <label>Teléfono</label>
+            <input type="text" id="pac-telefono" placeholder="10 dígitos" />
+          </div>
+          <div class="form-group">
+            <label>Correo Electrónico</label>
+            <input type="email" id="pac-correo" placeholder="correo@ejemplo.com" />
+          </div>
+          <div class="form-group full">
+            <label>Domicilio</label>
+            <input type="text" id="pac-direccion" placeholder="Calle, número, colonia, municipio, estado" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" data-close="modal-paciente">Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-paciente">💾 Guardar Paciente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════════╗
+     ║  MODAL: NOTA DE PRIMERA VEZ                                         ║
+     ╚══════════════════════════════════════════════════════════════════════╝ -->
+<div id="modal-primera_vez" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📋 Nota de Primera Vez / Historia Clínica</h3>
+      <button class="modal-close" data-close="modal-primera_vez">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" class="nota-id" />
+
+      <!-- Datos del médico -->
+      <div class="form-section">
+        <div class="form-section-title">🩺 Datos del Médico y Fecha</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Médico <span class="required">*</span></label>
+            <input type="text" class="medico-nombre" placeholder="Nombre del médico" /></div>
+          <div class="form-group"><label>Cédula Profesional</label>
+            <input type="text" class="medico-cedula" placeholder="Cédula" /></div>
+          <div class="form-group"><label>Especialidad</label>
+            <input type="text" class="medico-especialidad" placeholder="Especialidad" /></div>
+          <div class="form-group"><label>Fecha y Hora de la Nota</label>
+            <input type="datetime-local" class="fecha-nota" /></div>
+        </div>
+      </div>
+
+      <!-- Motivo de consulta -->
+      <div class="form-section">
+        <div class="form-section-title">📌 Motivo de Consulta / Padecimiento Actual</div>
+        <div class="form-group full"><label>Motivo de consulta <span class="required">*</span></label>
+          <textarea class="ce-motivo_consulta" rows="3" placeholder="Describa el motivo de consulta y padecimiento actual…"></textarea></div>
+      </div>
+
+      <!-- AHF -->
+      <div class="form-section">
+        <div class="form-section-title">👨‍👩‍👧 Antecedentes Heredo-Familiares (AHF)</div>
+        <div class="form-group full"><label>Antecedentes heredo-familiares</label>
+          <textarea class="ce-ahf" rows="3" placeholder="DM, HAS, cardiopatías, cáncer, enf. renales, enf. mentales, etc."></textarea></div>
+      </div>
+
+      <!-- APNP -->
+      <div class="form-section">
+        <div class="form-section-title">🏠 Antecedentes Personales No Patológicos (APNP)</div>
+        <div class="form-grid-2">
+          <div class="form-group"><label>Vivienda</label>
+            <input type="text" class="ce-apnp_vivienda" placeholder="Tipo, servicios básicos…" /></div>
+          <div class="form-group"><label>Alimentación</label>
+            <input type="text" class="ce-apnp_alimentacion" placeholder="Dieta habitual…" /></div>
+          <div class="form-group"><label>Higiene</label>
+            <input type="text" class="ce-apnp_higiene" placeholder="Higiene personal…" /></div>
+          <div class="form-group"><label>Actividad Física</label>
+            <input type="text" class="ce-apnp_actividad_fisica" placeholder="Tipo, frecuencia…" /></div>
+          <div class="form-group"><label>Inmunizaciones</label>
+            <input type="text" class="ce-apnp_inmunizaciones" placeholder="Esquema de vacunación…" /></div>
+          <div class="form-group"><label>Tabaquismo</label>
+            <input type="text" class="ce-apnp_tabaquismo" placeholder="Sí/No, índice tabáquico…" /></div>
+          <div class="form-group"><label>Alcoholismo</label>
+            <input type="text" class="ce-apnp_alcoholismo" placeholder="Sí/No, frecuencia…" /></div>
+          <div class="form-group"><label>Toxicomanías</label>
+            <input type="text" class="ce-apnp_toxicomanias" placeholder="Tipo de sustancia, frecuencia…" /></div>
+        </div>
+      </div>
+
+      <!-- APP -->
+      <div class="form-section">
+        <div class="form-section-title">🏥 Antecedentes Personales Patológicos (APP)</div>
+        <div class="form-grid-2">
+          <div class="form-group"><label>Enfermedades previas</label>
+            <textarea class="ce-app_enfermedades" rows="2" placeholder="Dx previos, fecha de diagnóstico…"></textarea></div>
+          <div class="form-group"><label>Cirugías / Hospitalizaciones</label>
+            <textarea class="ce-app_cirugias" rows="2" placeholder="Tipo, fecha, hospital…"></textarea></div>
+          <div class="form-group"><label>Transfusiones</label>
+            <input type="text" class="ce-app_transfusiones" placeholder="Sí/No, fecha, motivo…" /></div>
+          <div class="form-group"><label>Alergias</label>
+            <input type="text" class="ce-app_alergias" placeholder="Medicamentos, alimentos, sustancias…" /></div>
+          <div class="form-group"><label>Traumatismos</label>
+            <input type="text" class="ce-app_traumatismos" placeholder="Tipo, fecha, secuelas…" /></div>
+        </div>
+      </div>
+
+      <!-- AGO -->
+      <div class="form-section">
+        <div class="form-section-title">🌸 Antecedentes Gineco-Obstétricos (si aplica)</div>
+        <div class="form-grid-3">
+          <div class="form-group"><label>Menarca</label>
+            <input type="text" class="ce-ago_menarca" placeholder="Edad de menarca…" /></div>
+          <div class="form-group"><label>Ritmo Menstrual</label>
+            <input type="text" class="ce-ago_ritmo" placeholder="Ej: 28/5 días" /></div>
+          <div class="form-group"><label>FUM (Fecha Última Menstruación)</label>
+            <input type="date" class="ce-ago_fum" /></div>
+          <div class="form-group"><label>G (Gestas)</label>
+            <input type="number" class="ce-ago_g" min="0" placeholder="0" /></div>
+          <div class="form-group"><label>P (Partos)</label>
+            <input type="number" class="ce-ago_p" min="0" placeholder="0" /></div>
+          <div class="form-group"><label>A (Abortos)</label>
+            <input type="number" class="ce-ago_a" min="0" placeholder="0" /></div>
+          <div class="form-group"><label>C (Cesáreas)</label>
+            <input type="number" class="ce-ago_c" min="0" placeholder="0" /></div>
+          <div class="form-group"><label>FUP (Fecha Última Pap)</label>
+            <input type="date" class="ce-ago_fup" /></div>
+          <div class="form-group"><label>MPF (Método Planificación)</label>
+            <input type="text" class="ce-ago_mpf" placeholder="ACO, DIU, condón…" /></div>
+        </div>
+      </div>
+
+      <!-- IPAS -->
+      <div class="form-section">
+        <div class="form-section-title">🔍 Interrogatorio por Aparatos y Sistemas (IPAS)</div>
+        <div class="form-group full"><label>IPAS</label>
+          <textarea class="ce-ipas" rows="4" placeholder="Cardiorrespiratorio, digestivo, genitourinario, musculoesquelético, neurológico, dermatológico…"></textarea></div>
+      </div>
+
+      <!-- Exploración Física -->
+      <div class="form-section">
+        <div class="form-section-title">💓 Exploración Física y Signos Vitales</div>
+        <div class="sv-grid">
+          <div class="form-group"><label>TA (mmHg)</label>
+            <input type="text" class="ce-sv_ta" placeholder="120/80" /></div>
+          <div class="form-group"><label>FC (lpm)</label>
+            <input type="number" class="ce-sv_fc" placeholder="72" /></div>
+          <div class="form-group"><label>FR (rpm)</label>
+            <input type="number" class="ce-sv_fr" placeholder="16" /></div>
+          <div class="form-group"><label>Temp (°C)</label>
+            <input type="number" class="ce-sv_temp" step="0.1" placeholder="36.5" /></div>
+          <div class="form-group"><label>SpO2 (%)</label>
+            <input type="number" class="ce-sv_spo2" placeholder="98" /></div>
+          <div class="form-group"><label>Peso (kg)</label>
+            <input type="number" class="ce-sv_peso" step="0.1" placeholder="70" /></div>
+          <div class="form-group"><label>Talla (cm)</label>
+            <input type="number" class="ce-sv_talla" step="0.1" placeholder="170" /></div>
+          <div class="form-group"><label>IMC (kg/m²)</label>
+            <input type="number" class="ce-sv_imc" step="0.1" placeholder="Auto" readonly /></div>
+        </div>
+        <div class="form-group full" style="margin-top:12px;"><label>Exploración física detallada</label>
+          <textarea class="ce-exploracion_fisica" rows="4" placeholder="Habitus exterior, cabeza y cuello, tórax, abdomen, extremidades, neurológico…"></textarea></div>
+      </div>
+
+      <!-- CIE-10 -->
+      <div class="form-section">
+        <div class="form-section-title">🏷️ Diagnóstico(s) CIE-10 <span class="required">*</span></div>
+        <div class="cie10-container" id="cie10-primera_vez">
+          <input type="text" class="cie10-search" placeholder="Buscar por código o descripción…" />
+          <div class="cie10-dropdown"></div>
+          <div class="cie10-tags"></div>
+          <span class="cie10-hint">Selecciona uno o varios diagnósticos. Se guardarán separados por |</span>
+        </div>
+      </div>
+
+      <!-- Pronóstico y Plan -->
+      <div class="form-section">
+        <div class="form-section-title">📝 Pronóstico y Plan de Tratamiento</div>
+        <div class="form-grid-2">
+          <div class="form-group"><label>Pronóstico</label>
+            <input type="text" class="ce-pronostico" placeholder="Bueno, reservado, grave…" /></div>
+        </div>
+        <div class="form-group full" style="margin-top:10px;"><label>Plan de Tratamiento <span class="required">*</span></label>
+          <textarea class="plan-tratamiento" rows="3" placeholder="Medicamentos, indicaciones, referencia, seguimiento…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" data-close="modal-primera_vez">Cancelar</button>
+      <button class="btn btn-primary save-nota-btn" data-tipo="primera_vez">💾 Guardar Nota</button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════════╗
+     ║  MODAL: NOTA DE EVOLUCIÓN                                           ║
+     ╚══════════════════════════════════════════════════════════════════════╝ -->
+<div id="modal-evolucion" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📈 Nota de Evolución</h3>
+      <button class="modal-close" data-close="modal-evolucion">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" class="nota-id" />
+
+      <div class="form-section">
+        <div class="form-section-title">🩺 Datos del Médico y Fecha</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Médico <span class="required">*</span></label>
+            <input type="text" class="medico-nombre" placeholder="Nombre del médico" /></div>
+          <div class="form-group"><label>Cédula Profesional</label>
+            <input type="text" class="medico-cedula" /></div>
+          <div class="form-group"><label>Especialidad</label>
+            <input type="text" class="medico-especialidad" /></div>
+          <div class="form-group"><label>Fecha y Hora</label>
+            <input type="datetime-local" class="fecha-nota" /></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">📊 Evolución y Estado Actual</div>
+        <div class="form-group full"><label>Evolución / Estado actual <span class="required">*</span></label>
+          <textarea class="ce-evolucion" rows="4" placeholder="Describa la evolución del paciente, síntomas actuales, cambios desde la última consulta…"></textarea></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">💓 Signos Vitales y Exploración Física</div>
+        <div class="sv-grid">
+          <div class="form-group"><label>TA (mmHg)</label>
+            <input type="text" class="ce-sv_ta" placeholder="120/80" /></div>
+          <div class="form-group"><label>FC (lpm)</label>
+            <input type="number" class="ce-sv_fc" placeholder="72" /></div>
+          <div class="form-group"><label>FR (rpm)</label>
+            <input type="number" class="ce-sv_fr" placeholder="16" /></div>
+          <div class="form-group"><label>Temp (°C)</label>
+            <input type="number" class="ce-sv_temp" step="0.1" placeholder="36.5" /></div>
+          <div class="form-group"><label>SpO2 (%)</label>
+            <input type="number" class="ce-sv_spo2" placeholder="98" /></div>
+          <div class="form-group"><label>Peso (kg)</label>
+            <input type="number" class="ce-sv_peso" step="0.1" /></div>
+        </div>
+        <div class="form-group full" style="margin-top:12px;"><label>Exploración física</label>
+          <textarea class="ce-exploracion_fisica" rows="3" placeholder="Hallazgos relevantes en la exploración física…"></textarea></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">🔬 Resultados de Estudios</div>
+        <div class="form-group full"><label>Laboratorio / Gabinete / Imagen</label>
+          <textarea class="ce-estudios" rows="3" placeholder="Resultados de laboratorio, radiografías, ultrasonidos, TAC, etc."></textarea></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">🏷️ Diagnóstico(s) CIE-10 <span class="required">*</span></div>
+        <div class="cie10-container" id="cie10-evolucion">
+          <input type="text" class="cie10-search" placeholder="Buscar por código o descripción…" />
+          <div class="cie10-dropdown"></div>
+          <div class="cie10-tags"></div>
+          <span class="cie10-hint">Selecciona uno o varios diagnósticos</span>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">📝 Plan de Tratamiento</div>
+        <div class="form-group full"><label>Plan de Tratamiento <span class="required">*</span></label>
+          <textarea class="plan-tratamiento" rows="3" placeholder="Ajuste de medicamentos, indicaciones, estudios solicitados…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" data-close="modal-evolucion">Cancelar</button>
+      <button class="btn btn-primary save-nota-btn" data-tipo="evolucion">💾 Guardar Nota</button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════════╗
+     ║  MODAL: NOTA POSTANESTÉSICA                                         ║
+     ╚══════════════════════════════════════════════════════════════════════╝ -->
+<div id="modal-postanestesica" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>💉 Nota Postanestésica</h3>
+      <button class="modal-close" data-close="modal-postanestesica">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" class="nota-id" />
+
+      <div class="form-section">
+        <div class="form-section-title">🩺 Datos del Médico y Fecha</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Anestesiólogo <span class="required">*</span></label>
+            <input type="text" class="medico-nombre" placeholder="Nombre del anestesiólogo" /></div>
+          <div class="form-group"><label>Cédula Profesional</label>
+            <input type="text" class="medico-cedula" /></div>
+          <div class="form-group"><label>Especialidad</label>
+            <input type="text" class="medico-especialidad" value="Anestesiología" /></div>
+          <div class="form-group"><label>Fecha y Hora</label>
+            <input type="datetime-local" class="fecha-nota" /></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">🔪 Procedimiento y Anestesia</div>
+        <div class="form-grid-2">
+          <div class="form-group"><label>Procedimiento realizado <span class="required">*</span></label>
+            <input type="text" class="ce-procedimiento" placeholder="Nombre del procedimiento quirúrgico" /></div>
+          <div class="form-group"><label>Tipo de Anestesia <span class="required">*</span></label>
+            <select class="ce-tipo_anestesia">
+              <option value="">— Seleccionar —</option>
+              <option>General</option>
+              <option>Regional</option>
+              <option>Local</option>
+              <option>Sedación</option>
+              <option>Bloqueo neuroaxial</option>
+              <option>Combinada</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Duración de la anestesia (min)</label>
+            <input type="number" class="ce-duracion_anestesia" placeholder="120" /></div>
+          <div class="form-group"><label>Fármacos utilizados</label>
+            <input type="text" class="ce-farmacos_anestesia" placeholder="Propofol, fentanyl, sevoflurano…" /></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">💓 Signos Vitales Postoperatorios</div>
+        <div class="sv-grid">
+          <div class="form-group"><label>TA (mmHg)</label>
+            <input type="text" class="ce-sv_ta" placeholder="120/80" /></div>
+          <div class="form-group"><label>FC (lpm)</label>
+            <input type="number" class="ce-sv_fc" placeholder="72" /></div>
+          <div class="form-group"><label>FR (rpm)</label>
+            <input type="number" class="ce-sv_fr" placeholder="16" /></div>
+          <div class="form-group"><label>Temp (°C)</label>
+            <input type="number" class="ce-sv_temp" step="0.1" placeholder="36.5" /></div>
+          <div class="form-group"><label>SpO2 (%)</label>
+            <input type="number" class="ce-sv_spo2" placeholder="98" /></div>
+          <div class="form-group"><label>Glucosa (mg/dL)</label>
+            <input type="number" class="ce-sv_glucosa" placeholder="100" /></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">📊 Escalas de Valoración</div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Escala de Aldrete (0–10): <span class="ce-aldrete-val scale-val">5</span></label>
+            <div class="scale-row">
+              <span>0</span>
+              <input type="range" class="ce-aldrete" min="0" max="10" value="5" />
+              <span>10</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Escala EVA Dolor (0–10): <span class="ce-eva-val scale-val">0</span></label>
+            <div class="scale-row">
+              <span>0</span>
+              <input type="range" class="ce-eva_dolor" min="0" max="10" value="0" />
+              <span>10</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">⚠️ Complicaciones y Plan de Vigilancia</div>
+        <div class="form-group full"><label>Complicaciones anestésicas</label>
+          <textarea class="ce-complicaciones_anestesicas" rows="2" placeholder="Ninguna / Descripción de complicaciones…"></textarea></div>
+        <div class="form-group full" style="margin-top:10px;"><label>Plan de vigilancia postanestésica</label>
+          <textarea class="ce-plan_vigilancia" rows="2" placeholder="Indicaciones de vigilancia en URPA, sala, UCI…"></textarea></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">🏷️ Diagnóstico(s) CIE-10 <span class="required">*</span></div>
+        <div class="cie10-container" id="cie10-postanestesica">
+          <input type="text" class="cie10-search" placeholder="Buscar por código o descripción…" />
+          <div class="cie10-dropdown"></div>
+          <div class="cie10-tags"></div>
+          <span class="cie10-hint">Selecciona uno o varios diagnósticos</span>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">📝 Plan de Tratamiento</div>
+        <div class="form-group full"><label>Plan de Tratamiento <span class="required">*</span></label>
+          <textarea class="plan-tratamiento" rows="3" placeholder="Analgesia, líquidos, medicamentos, cuidados postoperatorios…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" data-close="modal-postanestesica">Cancelar</button>
+      <button class="btn btn-primary save-nota-btn" data-tipo="postanestesica">💾 Guardar Nota</button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════════╗
+     ║  MODAL: NOTA DE URGENCIAS                                           ║
+     ╚══════════════════════════════════════════════════════════════════════╝ -->
+<div id="modal-urgencias" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header" style="background:linear-gradient(135deg,#b71c1c,#c62828);">
+      <h3>🚨 Nota de Urgencias</h3>
+      <button class="modal-close" data-close="modal-urgencias">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" class="nota-id" />
+
+      <div class="form-section">
+        <div class="form-section-title">🩺 Datos del Médico y Fecha</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Médico <span class="required">*</span></label>
+            <input type="text" class="medico-nombre" /></div>
+          <div class="form-group"><label>Cédula Profesional</label>
+            <input type="text" class="medico-cedula" /></div>
+          <div class="form-group"><label>Especialidad</label>
+            <input type="text" class="medico-especialidad" /></div>
+          <div class="form-group"><label>Fecha y Hora</label>
+            <input type="datetime-local" class="fecha-nota" /></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">📌 Motivo y Condiciones de Llegada</div>
+        <div class="form-group full"><label>Motivo de atención de urgencia <span class="required">*</span></label>
+          <textarea class="ce-motivo_urgencia" rows="3" placeholder="Describa el motivo de atención de urgencia…"></textarea></div>
+        <div class="form-grid-3" style="margin-top:12px;">
+          <div class="form-group"><label>Hora de llegada</label>
+            <input type="time" class="ce-hora_llegada" /></div>
+          <div class="form-group"><label>Medio de llegada</label>
+            <select class="ce-medio_llegada">
+              <option value="">— Seleccionar —</option>
+              <option>Propio pie</option>
+              <option>Ambulancia SAMU/911</option>
+              <option>Vehículo particular</option>
+              <option>Referido de otra unidad</option>
+              <option>Helicóptero</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Triage</label>
+            <select class="ce-triage">
+              <option value="">— Seleccionar —</option>
+              <option value="rojo">🔴 Rojo — Resucitación</option>
+              <option value="naranja">🟠 Naranja — Emergencia</option>
+              <option value="amarillo">🟡 Amarillo — Urgencia</option>
+              <option value="verde">🟢 Verde — Urgencia menor</option>
+              <option value="azul">🔵 Azul — No urgencia</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">💓 Estado al Ingreso y Signos Vitales</div>
+        <div class="sv-grid">
+          <div class="form-group"><label>TA (mmHg)</label>
+            <input type="text" class="ce-sv_ta" placeholder="120/80" /></div>
+          <div class="form-group"><label>FC (lpm)</label>
+            <input type="number" class="ce-sv_fc" placeholder="72" /></div>
+          <div class="form-group"><label>FR (rpm)</label>
+            <input type="number" class="ce-sv_fr" placeholder="16" /></div>
+          <div class="form-group"><label>Temp (°C)</label>
+            <input type="number" class="ce-sv_temp" step="0.1" placeholder="36.5" /></div>
+          <div class="form-group"><label>SpO2 (%)</label>
+            <input type="number" class="ce-sv_spo2" placeholder="98" /></div>
+          <div class="form-group"><label>Glasgow (3–15)</label>
+            <input type="number" class="ce-glasgow" min="3" max="15" placeholder="15" /></div>
+        </div>
+        <div class="form-group full" style="margin-top:12px;"><label>Exploración física al ingreso</label>
+          <textarea class="ce-exploracion_fisica" rows="3" placeholder="Estado general, exploración por sistemas…"></textarea></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">💊 Tratamiento Inicial en Urgencias</div>
+        <div class="form-group full"><label>Tratamiento inicial aplicado</label>
+          <textarea class="ce-tratamiento_inicial" rows="3" placeholder="Medicamentos administrados, procedimientos realizados en urgencias…"></textarea></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">🏷️ Diagnóstico(s) CIE-10 <span class="required">*</span></div>
+        <div class="cie10-container" id="cie10-urgencias">
+          <input type="text" class="cie10-search" placeholder="Buscar por código o descripción…" />
+          <div class="cie10-dropdown"></div>
+          <div class="cie10-tags"></div>
+          <span class="cie10-hint">Selecciona uno o varios diagnósticos</span>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">🚪 Pronóstico y Destino</div>
+        <div class="form-grid-2">
+          <div class="form-group"><label>Pronóstico</label>
+            <input type="text" class="ce-pronostico" placeholder="Bueno, reservado, grave, crítico…" /></div>
+          <div class="form-group"><label>Destino del paciente</label>
+            <select class="ce-destino_paciente">
+              <option value="">— Seleccionar —</option>
+              <option>Alta a domicilio</option>
+              <option>Observación en urgencias</option>
+              <option>Hospitalización</option>
+              <option>Quirófano</option>
+              <option>UCI / Terapia intensiva</option>
+              <option>Traslado / Referencia</option>
+              <option>Defunción</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group full" style="margin-top:10px;"><label>Plan de Tratamiento <span class="required">*</span></label>
+          <textarea class="plan-tratamiento" rows="3" placeholder="Indicaciones, medicamentos, seguimiento…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" data-close="modal-urgencias">Cancelar</button>
+      <button class="btn btn-primary save-nota-btn" data-tipo="urgencias">💾 Guardar Nota</button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════════╗
+     ║  MODAL: NOTA DE ENFERMERÍA                                          ║
+     ╚══════════════════════════════════════════════════════════════════════╝ -->
+<div id="modal-enfermeria" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header" style="background:linear-gradient(135deg,#bf360c,#e64a19);">
+      <h3>🏥 Nota de Enfermería</h3>
+      <button class="modal-close" data-close="modal-enfermeria">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" class="nota-id" />
+
+      <div class="form-section">
+        <div class="form-section-title">👩‍⚕️ Datos del Profesional y Fecha</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Enfermero/a <span class="required">*</span></label>
+            <input type="text" class="medico-nombre" placeholder="Nombre del/la enfermero/a" /></div>
+          <div class="form-group"><label>Cédula / Matrícula</label>
+            <input type="text" class="medico-cedula" /></div>
+          <div class="form-group"><label>Turno / Categoría</label>
+            <input type="text" class="medico-especialidad" placeholder="Matutino, vespertino, nocturno…" /></div>
+          <div class="form-group"><label>Fecha y Hora</label>
+            <input type="datetime-local" class="fecha-nota" /></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">📋 Valoración de Enfermería</div>
+        <div class="form-group full"><label>Valoración / Observaciones <span class="required">*</span></label>
+          <textarea class="ce-valoracion_enfermeria" rows="4" placeholder="Estado general del paciente, valoración de enfermería por sistemas…"></textarea></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">💓 Signos Vitales</div>
+        <div class="sv-grid">
+          <div class="form-group"><label>TA (mmHg)</label>
+            <input type="text" class="ce-sv_ta" placeholder="120/80" /></div>
+          <div class="form-group"><label>FC (lpm)</label>
+            <input type="number" class="ce-sv_fc" placeholder="72" /></div>
+          <div class="form-group"><label>FR (rpm)</label>
+            <input type="number" class="ce-sv_fr" placeholder="16" /></div>
+          <div class="form-group"><label>Temp (°C)</label>
+            <input type="number" class="ce-sv_temp" step="0.1" placeholder="36.5" /></div>
+          <div class="form-group"><label>SpO2 (%)</label>
+            <input type="number" class="ce-sv_spo2" placeholder="98" /></div>
+          <div class="form-group"><label>Glucosa (mg/dL)</label>
+            <input type="number" class="ce-sv_glucosa" placeholder="100" /></div>
+          <div class="form-group"><label>Diuresis (mL)</label>
+            <input type="number" class="ce-diuresis" placeholder="ml/hora" /></div>
+          <div class="form-group"><label>Balance hídrico (mL)</label>
+            <input type="text" class="ce-balance_hidrico" placeholder="+500 / -200…" /></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">🔧 Procedimientos Realizados</div>
+        <div class="form-group full"><label>Procedimientos de enfermería</label>
+          <textarea class="ce-procedimientos_enfermeria" rows="3" placeholder="Curación de heridas, colocación de SNG, catéter, toma de muestras, cambios de posición…"></textarea></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">💊 Medicamentos Administrados</div>
+        <div class="form-group full"><label>Medicamentos (medicamento, dosis, vía, hora)</label>
+          <textarea class="ce-medicamentos_administrados" rows="4" placeholder="Ej: Paracetamol 500mg VO 08:00h, Metronidazol 500mg IV 14:00h…"></textarea></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">📚 Plan de Cuidados (NANDA/NIC/NOC)</div>
+        <div class="form-grid-3">
+          <div class="form-group"><label>NANDA (Diagnóstico)</label>
+            <textarea class="ce-nanda" rows="3" placeholder="Diagnóstico de enfermería…"></textarea></div>
+          <div class="form-group"><label>NIC (Intervenciones)</label>
+            <textarea class="ce-nic" rows="3" placeholder="Intervenciones de enfermería…"></textarea></div>
+          <div class="form-group"><label>NOC (Resultados esperados)</label>
+            <textarea class="ce-noc" rows="3" placeholder="Resultados esperados…"></textarea></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">⚠️ Observaciones Especiales</div>
+        <div class="form-group full"><label>Eventos adversos / Caídas / Ingresos y egresos de líquidos</label>
+          <textarea class="ce-observaciones_especiales" rows="3" placeholder="Eventos adversos, caídas, incidentes, ingresos/egresos de líquidos, otras observaciones relevantes…"></textarea></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">🏷️ Diagnóstico(s) CIE-10 <span class="required">*</span></div>
+        <div class="cie10-container" id="cie10-enfermeria">
+          <input type="text" class="cie10-search" placeholder="Buscar por código o descripción…" />
+          <div class="cie10-dropdown"></div>
+          <div class="cie10-tags"></div>
+          <span class="cie10-hint">Selecciona uno o varios diagnósticos</span>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">📝 Plan de Tratamiento / Cuidados</div>
+        <div class="form-group full"><label>Plan de tratamiento / cuidados <span class="required">*</span></label>
+          <textarea class="plan-tratamiento" rows="3" placeholder="Indicaciones, cuidados a continuar, signos de alarma…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" data-close="modal-enfermeria">Cancelar</button>
+      <button class="btn btn-primary save-nota-btn" data-tipo="enfermeria">💾 Guardar Nota</button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════════╗
+     ║  MODAL: VER NOTA                                                    ║
+     ╚══════════════════════════════════════════════════════════════════════╝ -->
+<div id="modal-ver-nota" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header" id="ver-nota-header">
+      <h3 id="ver-nota-title">Nota Clínica</h3>
+      <button class="modal-close" data-close="modal-ver-nota">&times;</button>
+    </div>
+    <div class="modal-body" id="ver-nota-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" data-close="modal-ver-nota">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════════════╗
+     ║  SCRIPTS                                                            ║
+     ╚══════════════════════════════════════════════════════════════════════╝ -->
+<script src="cie10_catalogo.js"></script>
+<script>
+'use strict';
+
+// ── State ─────────────────────────────────────────────────────────────────
+let currentPacienteId = null;
+let currentFilterTipo = 'todas';
+
+// ── Toast ─────────────────────────────────────────────────────────────────
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = ''; }, 3200);
+}
+
+// ── Modal helpers ─────────────────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+document.querySelectorAll('[data-close]').forEach(btn => {
+  btn.addEventListener('click', () => closeModal(btn.dataset.close));
+});
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) closeModal(overlay.id);
+  });
+});
+
+// ── CIE-10 Multi-select component ─────────────────────────────────────────
+function initCIE10Component(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const searchInput  = container.querySelector('.cie10-search');
+  const dropdown     = container.querySelector('.cie10-dropdown');
+  const tagsDiv      = container.querySelector('.cie10-tags');
+
+  let selectedCodes  = [];
+
+  function renderDropdown(term) {
+    const t = (term || '').trim().toLowerCase();
+    if (!t) { dropdown.classList.remove('show'); return; }
+
+    const matches = CIE10_CATALOGO.filter(item =>
+      item.codigo.toLowerCase().includes(t) ||
+      item.descripcion.toLowerCase().includes(t)
+    ).slice(0, 80);
+
+    if (!matches.length) {
+      dropdown.innerHTML = '<div class="cie10-option" style="color:var(--text-muted)">Sin resultados</div>';
+    } else {
+      dropdown.innerHTML = matches.map(item => {
+        const sel = selectedCodes.includes(item.codigo) ? 'selected' : '';
+        return `<div class="cie10-option ${sel}" data-code="${item.codigo}" data-desc="${item.descripcion}">
+          <span class="code">${item.codigo}</span>
+          <span>${item.descripcion}</span>
+        </div>`;
+      }).join('');
+    }
+    dropdown.classList.add('show');
+  }
+
+  function addCode(codigo, descripcion) {
+    if (!selectedCodes.includes(codigo)) {
+      selectedCodes.push(codigo);
+      renderTags();
+      updateDropdownSelections();
+    }
+  }
+
+  function removeCode(codigo) {
+    selectedCodes = selectedCodes.filter(c => c !== codigo);
+    renderTags();
+    updateDropdownSelections();
+  }
+
+  function renderTags() {
+    tagsDiv.innerHTML = selectedCodes.map(code => {
+      const item = CIE10_CATALOGO.find(i => i.codigo === code);
+      const desc = item ? item.descripcion : code;
+      return `<span class="cie10-tag" title="${desc}">
+        <span>${code} — ${desc.length > 35 ? desc.slice(0,35)+'…' : desc}</span>
+        <button class="tag-remove" data-code="${code}" title="Eliminar">&times;</button>
+      </span>`;
+    }).join('');
+
+    tagsDiv.querySelectorAll('.tag-remove').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeCode(btn.dataset.code);
+      });
+    });
+  }
+
+  function updateDropdownSelections() {
+    dropdown.querySelectorAll('.cie10-option').forEach(opt => {
+      opt.classList.toggle('selected', selectedCodes.includes(opt.dataset.code));
+    });
+  }
+
+  searchInput.addEventListener('input', () => renderDropdown(searchInput.value));
+  searchInput.addEventListener('focus', () => {
+    if (searchInput.value.trim()) renderDropdown(searchInput.value);
+  });
+
+  dropdown.addEventListener('click', e => {
+    const opt = e.target.closest('.cie10-option[data-code]');
+    if (!opt) return;
+    const code = opt.dataset.code;
+    const desc = opt.dataset.desc;
+    if (selectedCodes.includes(code)) {
+      removeCode(code);
+    } else {
+      addCode(code, desc);
+    }
+  });
+
+  document.addEventListener('click', e => {
+    if (!container.contains(e.target)) dropdown.classList.remove('show');
+  });
+
+  // Public API
+  container._cie10 = {
+    getSelected: () => [...selectedCodes],
+    setSelected: (codes) => {
+      selectedCodes = [...codes];
+      renderTags();
+    },
+    reset: () => {
+      selectedCodes = [];
+      renderTags();
+      searchInput.value = '';
+      dropdown.classList.remove('show');
+    }
+  };
+}
+
+// Initialise all CIE-10 components
+['primera_vez', 'evolucion', 'postanestesica', 'urgencias', 'enfermeria'].forEach(tipo => {
+  initCIE10Component(`cie10-${tipo}`);
+});
+
+// ── IMC auto-calculate (primera vez) ─────────────────────────────────────
+const modalPV = document.getElementById('modal-primera_vez');
+function updateIMC() {
+  const peso  = parseFloat(modalPV.querySelector('.ce-sv_peso').value);
+  const talla = parseFloat(modalPV.querySelector('.ce-sv_talla').value);
+  if (peso > 0 && talla > 0) {
+    const imc = (peso / Math.pow(talla / 100, 2)).toFixed(1);
+    modalPV.querySelector('.ce-sv_imc').value = imc;
+  }
+}
+modalPV.querySelector('.ce-sv_peso').addEventListener('input', updateIMC);
+modalPV.querySelector('.ce-sv_talla').addEventListener('input', updateIMC);
+
+// ── Aldrete / EVA sliders ─────────────────────────────────────────────────
+const modalPA = document.getElementById('modal-postanestesica');
+modalPA.querySelector('.ce-aldrete').addEventListener('input', function() {
+  modalPA.querySelector('.ce-aldrete-val').textContent = this.value;
+});
+modalPA.querySelector('.ce-eva_dolor').addEventListener('input', function() {
+  modalPA.querySelector('.ce-eva-val').textContent = this.value;
+});
+
+// ── Datetime default helpers ──────────────────────────────────────────────
+function nowDatetimeLocal() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+}
+
+// ── Patient list ──────────────────────────────────────────────────────────
+async function cargarPacientes(query = '') {
+  const res = await window.api.buscarPacientes(query);
+  const list = document.getElementById('lista-pacientes');
+  if (!res.ok || !res.data.length) {
+    list.innerHTML = '<div class="empty-list">Sin resultados.</div>';
+    return;
+  }
+  list.innerHTML = res.data.map(p => {
+    const edad = p.fecha_nacimiento
+      ? new Date().getFullYear() - new Date(p.fecha_nacimiento).getFullYear() + ' años'
+      : '';
+    const sexo = p.sexo === 'M' ? 'Masculino' : p.sexo === 'F' ? 'Femenino' : '';
+    return `<div class="paciente-item ${p.id === currentPacienteId ? 'active' : ''}"
+              data-id="${p.id}">
+      <div class="pac-nombre">${p.apellido_paterno} ${p.apellido_materno || ''}, ${p.nombre}</div>
+      <div class="pac-info">${[sexo, edad].filter(Boolean).join(' · ')}</div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('.paciente-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.paciente-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      cargarVistaPaciente(+item.dataset.id);
+    });
+  });
+}
+
+document.getElementById('buscar-input').addEventListener('input', function() {
+  cargarPacientes(this.value);
+});
+
+// ── New patient ───────────────────────────────────────────────────────────
+document.getElementById('btn-nuevo-paciente').addEventListener('click', () => {
+  document.getElementById('pac-id').value = '';
+  document.getElementById('modal-paciente-title').textContent = 'Nuevo Paciente';
+  document.getElementById('modal-paciente').querySelectorAll('input, select').forEach(el => {
+    if (el.id !== 'pac-id') el.value = '';
+  });
+  openModal('modal-paciente');
+});
+
+document.getElementById('btn-guardar-paciente').addEventListener('click', async () => {
+  const nombre = document.getElementById('pac-nombre').value.trim();
+  const apellido = document.getElementById('pac-ap-paterno').value.trim();
+  if (!nombre || !apellido) {
+    showToast('Nombre y apellido paterno son obligatorios.', 'error'); return;
+  }
+  const paciente = {
+    id: document.getElementById('pac-id').value || undefined,
+    nombre,
+    apellido_paterno: apellido,
+    apellido_materno: document.getElementById('pac-ap-materno').value.trim(),
+    fecha_nacimiento: document.getElementById('pac-fecha-nac').value,
+    sexo: document.getElementById('pac-sexo').value,
+    curp: document.getElementById('pac-curp').value.trim().toUpperCase(),
+    nss: document.getElementById('pac-nss').value.trim(),
+    telefono: document.getElementById('pac-telefono').value.trim(),
+    direccion: document.getElementById('pac-direccion').value.trim(),
+    correo: document.getElementById('pac-correo').value.trim(),
+    grupo_sanguineo: document.getElementById('pac-grupo-sang').value
+  };
+  const res = await window.api.guardarPaciente(paciente);
+  if (res.ok) {
+    showToast('Paciente guardado correctamente.', 'success');
+    closeModal('modal-paciente');
+    await cargarPacientes(document.getElementById('buscar-input').value);
+    cargarVistaPaciente(res.id);
+  } else {
+    showToast('Error: ' + res.error, 'error');
+  }
+});
+
+// ── Patient view ──────────────────────────────────────────────────────────
+async function cargarVistaPaciente(pacienteId) {
+  currentPacienteId = pacienteId;
+  const resP = await window.api.obtenerPaciente(pacienteId);
+  if (!resP.ok || !resP.data) return;
+  const pac = resP.data;
+
+  document.getElementById('welcome').style.display = 'none';
+  const view = document.getElementById('paciente-view');
+  view.style.display = 'block';
+
+  const edad = pac.fecha_nacimiento
+    ? new Date().getFullYear() - new Date(pac.fecha_nacimiento).getFullYear()
+    : '?';
+
+  view.innerHTML = `
+    <div class="pac-header">
+      <div class="pac-header-info">
+        <h2>${pac.apellido_paterno} ${pac.apellido_materno || ''}, ${pac.nombre}</h2>
+        <p>${pac.sexo === 'M' ? 'Masculino' : pac.sexo === 'F' ? 'Femenino' : ''} · ${edad} años
+           ${pac.fecha_nacimiento ? '· Nac: ' + pac.fecha_nacimiento : ''}
+           ${pac.grupo_sanguineo ? '· Grupo: ' + pac.grupo_sanguineo : ''}
+           ${pac.curp ? '· CURP: ' + pac.curp : ''}
+        </p>
+      </div>
+      <div class="pac-header-actions">
+        <button class="btn btn-outline btn-sm" id="btn-editar-pac">✏️ Editar</button>
+        <button class="btn btn-outline btn-sm" id="btn-integridad">🔐 Integridad</button>
+        <button class="btn btn-danger btn-sm" id="btn-eliminar-pac">🗑️ Eliminar</button>
+      </div>
+    </div>
+
+    <div class="notes-toolbar">
+      <span>Nueva nota:</span>
+      <button class="nota-type-btn" data-tipo="primera_vez">📋 Primera Vez</button>
+      <button class="nota-type-btn" data-tipo="evolucion">📈 Evolución</button>
+      <button class="nota-type-btn" data-tipo="postanestesica">💉 Postanestésica</button>
+      <button class="nota-type-btn" data-tipo="urgencias">🚨 Urgencias</button>
+      <button class="nota-type-btn" data-tipo="enfermeria">🏥 Enfermería</button>
+      <div class="integrity-btn" style="margin-left:auto;">
+        <span>Filtrar:</span>
+        <select id="filtro-tipo" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border);font-size:.8rem;">
+          <option value="todas">Todas</option>
+          <option value="primera_vez">Primera Vez</option>
+          <option value="evolucion">Evolución</option>
+          <option value="postanestesica">Postanestésica</option>
+          <option value="urgencias">Urgencias</option>
+          <option value="enfermeria">Enfermería</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="notas-list" class="notes-list"></div>
+  `;
+
+  // Bind buttons
+  document.getElementById('btn-editar-pac').addEventListener('click', () => editarPaciente(pac));
+  document.getElementById('btn-eliminar-pac').addEventListener('click', () => eliminarPaciente(pacienteId));
+  document.getElementById('btn-integridad').addEventListener('click', () => verificarIntegridad(pacienteId));
+
+  document.querySelectorAll('.nota-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => abrirModalNota(btn.dataset.tipo, pacienteId));
+  });
+
+  document.getElementById('filtro-tipo').addEventListener('change', function() {
+    currentFilterTipo = this.value;
+    renderNotas(pacienteId, currentFilterTipo);
+  });
+
+  await renderNotas(pacienteId, currentFilterTipo);
+
+  // Update sidebar
+  document.querySelectorAll('.paciente-item').forEach(i => {
+    i.classList.toggle('active', +i.dataset.id === pacienteId);
+  });
+}
+
+async function renderNotas(pacienteId, filtroTipo = 'todas') {
+  const res = await window.api.obtenerNotas(pacienteId);
+  const container = document.getElementById('notas-list');
+  if (!container) return;
+  if (!res.ok || !res.data.length) {
+    container.innerHTML = '<div class="empty-list">No hay notas registradas para este paciente.</div>';
+    return;
+  }
+  const notas = filtroTipo === 'todas' ? res.data : res.data.filter(n => n.tipo_nota === filtroTipo);
+  if (!notas.length) {
+    container.innerHTML = '<div class="empty-list">No hay notas del tipo seleccionado.</div>';
+    return;
+  }
+
+  const tipoLabels = {
+    primera_vez: 'Primera Vez', evolucion: 'Evolución',
+    postanestesica: 'Postanestésica', urgencias: 'Urgencias', enfermeria: 'Enfermería'
+  };
+
+  container.innerHTML = notas.map(nota => {
+    const dxList = nota.diagnosticos_cie10
+      ? nota.diagnosticos_cie10.split('|').filter(Boolean).slice(0, 3).join('; ')
+      : '—';
+    return `<div class="nota-card ${nota.tipo_nota}" data-id="${nota.id}">
+      <div class="nota-card-header">
+        <span class="nota-tipo-badge badge-${nota.tipo_nota}">${tipoLabels[nota.tipo_nota] || nota.tipo_nota}</span>
+        <span class="nota-fecha">📅 ${nota.fecha_nota}</span>
+      </div>
+      <div class="nota-medico">👨‍⚕️ ${nota.medico_nombre || 'Sin médico'} ${nota.medico_especialidad ? '· ' + nota.medico_especialidad : ''}</div>
+      <div class="nota-dx">🏷️ ${dxList}</div>
+      <div class="nota-actions">
+        <button class="btn btn-outline btn-sm btn-ver-nota" data-id="${nota.id}">👁️ Ver</button>
+        <button class="btn btn-outline btn-sm btn-editar-nota" data-id="${nota.id}" data-tipo="${nota.tipo_nota}">✏️ Editar</button>
+        <button class="btn btn-danger btn-sm btn-eliminar-nota" data-id="${nota.id}">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  container.querySelectorAll('.btn-ver-nota').forEach(btn =>
+    btn.addEventListener('click', e => { e.stopPropagation(); verNota(+btn.dataset.id); }));
+  container.querySelectorAll('.btn-editar-nota').forEach(btn =>
+    btn.addEventListener('click', e => { e.stopPropagation(); editarNota(+btn.dataset.id, btn.dataset.tipo, pacienteId); }));
+  container.querySelectorAll('.btn-eliminar-nota').forEach(btn =>
+    btn.addEventListener('click', e => { e.stopPropagation(); eliminarNota(+btn.dataset.id, pacienteId); }));
+}
+
+// ── Edit patient ──────────────────────────────────────────────────────────
+function editarPaciente(pac) {
+  document.getElementById('pac-id').value = pac.id;
+  document.getElementById('modal-paciente-title').textContent = 'Editar Paciente';
+  document.getElementById('pac-nombre').value = pac.nombre || '';
+  document.getElementById('pac-ap-paterno').value = pac.apellido_paterno || '';
+  document.getElementById('pac-ap-materno').value = pac.apellido_materno || '';
+  document.getElementById('pac-fecha-nac').value = pac.fecha_nacimiento || '';
+  document.getElementById('pac-sexo').value = pac.sexo || '';
+  document.getElementById('pac-curp').value = pac.curp || '';
+  document.getElementById('pac-nss').value = pac.nss || '';
+  document.getElementById('pac-telefono').value = pac.telefono || '';
+  document.getElementById('pac-direccion').value = pac.direccion || '';
+  document.getElementById('pac-correo').value = pac.correo || '';
+  document.getElementById('pac-grupo-sang').value = pac.grupo_sanguineo || '';
+  openModal('modal-paciente');
+}
+
+async function eliminarPaciente(id) {
+  if (!confirm('¿Eliminar este paciente y todas sus notas clínicas? Esta acción no se puede deshacer.')) return;
+  const res = await window.api.eliminarPaciente(id);
+  if (res.ok) {
+    showToast('Paciente eliminado.', 'success');
+    currentPacienteId = null;
+    document.getElementById('paciente-view').style.display = 'none';
+    document.getElementById('welcome').style.display = '';
+    cargarPacientes(document.getElementById('buscar-input').value);
+  } else {
+    showToast('Error: ' + res.error, 'error');
+  }
+}
+
+// ── Open modal for new note ────────────────────────────────────────────────
+function abrirModalNota(tipo, pacienteId) {
+  const modal = document.getElementById(`modal-${tipo}`);
+  if (!modal) return;
+  // Reset fields
+  modal.querySelectorAll('input:not([type=range]), select, textarea').forEach(el => {
+    if (el.classList.contains('fecha-nota')) el.value = nowDatetimeLocal();
+    else if (!el.classList.contains('medico-especialidad')) el.value = '';
+  });
+  modal.querySelector('.nota-id').value = '';
+
+  // Reset CIE-10
+  const cie = document.getElementById(`cie10-${tipo}`);
+  if (cie && cie._cie10) cie._cie10.reset();
+
+  // Reset sliders to default display
+  if (tipo === 'postanestesica') {
+    modal.querySelector('.ce-aldrete').value = 5;
+    modal.querySelector('.ce-aldrete-val').textContent = '5';
+    modal.querySelector('.ce-eva_dolor').value = 0;
+    modal.querySelector('.ce-eva-val').textContent = '0';
+  }
+
+  modal.dataset.pacienteId = pacienteId;
+  openModal(`modal-${tipo}`);
+}
+
+// ── Save note ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.save-nota-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const tipo = btn.dataset.tipo;
+    const modal = document.getElementById(`modal-${tipo}`);
+    const pacienteId = modal.dataset.pacienteId || currentPacienteId;
+    if (!pacienteId) { showToast('No hay paciente seleccionado.', 'error'); return; }
+
+    const notaId = modal.querySelector('.nota-id').value;
+    const medNombre = modal.querySelector('.medico-nombre').value.trim();
+    if (!medNombre) { showToast('El nombre del médico/profesional es obligatorio.', 'error'); return; }
+
+    // Collect CIE-10
+    const cie = document.getElementById(`cie10-${tipo}`);
+    const dxCodes = cie && cie._cie10 ? cie._cie10.getSelected() : [];
+
+    // Collect all campos_extra (any input/select/textarea with class ce-*)
+    const camposExtra = {};
+    modal.querySelectorAll('[class*="ce-"]').forEach(el => {
+      const cls = [...el.classList].find(c => c.startsWith('ce-'));
+      if (cls) {
+        const key = cls.replace('ce-', '');
+        camposExtra[key] = el.value;
+      }
+    });
+
+    const nota = {
+      id: notaId ? +notaId : undefined,
+      paciente_id: +pacienteId,
+      tipo_nota: tipo,
+      fecha_nota: modal.querySelector('.fecha-nota').value,
+      medico_nombre: medNombre,
+      medico_cedula: modal.querySelector('.medico-cedula').value.trim(),
+      medico_especialidad: modal.querySelector('.medico-especialidad').value.trim(),
+      diagnosticos_cie10: dxCodes.join('|'),
+      plan_tratamiento: modal.querySelector('.plan-tratamiento').value.trim(),
+      campos_extra: camposExtra
+    };
+
+    const res = await window.api.guardarNota(nota);
+    if (res.ok) {
+      showToast('Nota guardada correctamente.', 'success');
+      closeModal(`modal-${tipo}`);
+      renderNotas(+pacienteId, currentFilterTipo);
+    } else {
+      showToast('Error: ' + res.error, 'error');
+    }
+  });
+});
+
+// ── View note ─────────────────────────────────────────────────────────────
+const tipoLabelsMap = {
+  primera_vez: 'Primera Vez', evolucion: 'Evolución',
+  postanestesica: 'Postanestésica', urgencias: 'Urgencias', enfermeria: 'Enfermería'
+};
+
+async function verNota(notaId) {
+  const res = await window.api.obtenerNota(notaId);
+  if (!res.ok || !res.data) return;
+  const nota = res.data;
+  let extra = {};
+  try { extra = JSON.parse(nota.campos_extra || '{}'); } catch(e) { extra = {}; }
+
+  const headerDiv = document.getElementById('ver-nota-header');
+  headerDiv.style.background = colorForTipo(nota.tipo_nota);
+  document.getElementById('ver-nota-title').textContent =
+    `${tipoLabelsMap[nota.tipo_nota] || nota.tipo_nota} — ${nota.fecha_nota}`;
+
+  const dxItems = (nota.diagnosticos_cie10 || '').split('|').filter(Boolean);
+  const dxHtml = dxItems.length
+    ? dxItems.map(code => {
+        const item = CIE10_CATALOGO.find(i => i.codigo === code);
+        return `<span class="cie10-tag" style="margin:2px;">${code}${item ? ' — ' + item.descripcion : ''}</span>`;
+      }).join('')
+    : '<em>Sin diagnósticos</em>';
+
+  const extraHtml = Object.entries(extra)
+    .filter(([,v]) => v)
+    .map(([k, v]) => `<tr><td style="font-weight:600;padding:4px 8px 4px 0;color:var(--text-muted);font-size:.8rem;min-width:160px;">${formatFieldName(k)}</td><td style="padding:4px 0;font-size:.875rem;">${String(v).replace(/\n/g,'<br>')}</td></tr>`)
+    .join('');
+
+  document.getElementById('ver-nota-body').innerHTML = `
+    <div style="margin-bottom:16px;">
+      <table style="width:100%;border-collapse:collapse;">
+        <tr><td style="font-weight:600;color:var(--text-muted);font-size:.8rem;min-width:160px;padding:4px 8px 4px 0;">Médico/Profesional</td>
+            <td style="font-size:.875rem;">${nota.medico_nombre || '—'}</td></tr>
+        <tr><td style="font-weight:600;color:var(--text-muted);font-size:.8rem;padding:4px 8px 4px 0;">Cédula</td>
+            <td style="font-size:.875rem;">${nota.medico_cedula || '—'}</td></tr>
+        <tr><td style="font-weight:600;color:var(--text-muted);font-size:.8rem;padding:4px 8px 4px 0;">Especialidad</td>
+            <td style="font-size:.875rem;">${nota.medico_especialidad || '—'}</td></tr>
+        ${extraHtml}
+      </table>
+    </div>
+    <hr class="divider"/>
+    <div style="margin-bottom:12px;">
+      <div style="font-weight:700;font-size:.85rem;color:var(--primary);margin-bottom:6px;">🏷️ DIAGNÓSTICOS CIE-10</div>
+      <div class="cie10-tags" style="flex-wrap:wrap;display:flex;gap:6px;">${dxHtml}</div>
+    </div>
+    ${nota.plan_tratamiento ? `
+    <hr class="divider"/>
+    <div>
+      <div style="font-weight:700;font-size:.85rem;color:var(--primary);margin-bottom:4px;">📝 PLAN DE TRATAMIENTO</div>
+      <div style="font-size:.875rem;">${nota.plan_tratamiento.replace(/\n/g,'<br>')}</div>
+    </div>` : ''}
+    <hr class="divider"/>
+    <div style="font-size:.75rem;color:var(--text-muted);">
+      🔐 Hash SHA-256: <code>${nota.hash_integridad || 'N/A'}</code>
+    </div>
+  `;
+
+  openModal('modal-ver-nota');
+}
+
+function colorForTipo(tipo) {
+  const map = {
+    primera_vez: 'linear-gradient(135deg,var(--primary-dark),var(--primary))',
+    evolucion: 'linear-gradient(135deg,#00695c,#00897b)',
+    postanestesica: 'linear-gradient(135deg,#4a148c,#7b1fa2)',
+    urgencias: 'linear-gradient(135deg,#b71c1c,#c62828)',
+    enfermeria: 'linear-gradient(135deg,#bf360c,#e64a19)'
+  };
+  return map[tipo] || 'linear-gradient(135deg,var(--primary-dark),var(--primary))';
+}
+
+function formatFieldName(key) {
+  return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// ── Edit note ─────────────────────────────────────────────────────────────
+async function editarNota(notaId, tipo, pacienteId) {
+  const res = await window.api.obtenerNota(notaId);
+  if (!res.ok || !res.data) return;
+  const nota = res.data;
+
+  // Open modal first (to reset state)
+  abrirModalNota(tipo, pacienteId);
+
+  const modal = document.getElementById(`modal-${tipo}`);
+  modal.querySelector('.nota-id').value = notaId;
+
+  // Fill common fields
+  const setVal = (cls, val) => {
+    const el = modal.querySelector(`.${cls}`);
+    if (el) el.value = val || '';
+  };
+  setVal('fecha-nota', nota.fecha_nota);
+  setVal('medico-nombre', nota.medico_nombre);
+  setVal('medico-cedula', nota.medico_cedula);
+  setVal('medico-especialidad', nota.medico_especialidad);
+  setVal('plan-tratamiento', nota.plan_tratamiento);
+
+  // Fill CIE-10
+  const cie = document.getElementById(`cie10-${tipo}`);
+  if (cie && cie._cie10 && nota.diagnosticos_cie10) {
+    const codes = nota.diagnosticos_cie10.split('|').filter(Boolean);
+    cie._cie10.setSelected(codes);
+  }
+
+  // Fill campos_extra
+  let extra = {};
+  try { extra = JSON.parse(nota.campos_extra || '{}'); } catch(e) { extra = {}; }
+  Object.entries(extra).forEach(([k, v]) => {
+    const el = modal.querySelector(`.ce-${k}`);
+    if (el) el.value = v || '';
+  });
+
+  // Fix sliders display
+  if (tipo === 'postanestesica') {
+    const aldVal = extra['aldrete'] || 5;
+    const evaVal = extra['eva_dolor'] || 0;
+    modal.querySelector('.ce-aldrete').value = aldVal;
+    modal.querySelector('.ce-aldrete-val').textContent = aldVal;
+    modal.querySelector('.ce-eva_dolor').value = evaVal;
+    modal.querySelector('.ce-eva-val').textContent = evaVal;
+  }
+}
+
+// ── Delete note ───────────────────────────────────────────────────────────
+async function eliminarNota(notaId, pacienteId) {
+  if (!confirm('¿Eliminar esta nota clínica? Esta acción no se puede deshacer.')) return;
+  const res = await window.api.eliminarNota(notaId);
+  if (res.ok) {
+    showToast('Nota eliminada.', 'success');
+    renderNotas(pacienteId, currentFilterTipo);
+  } else {
+    showToast('Error: ' + res.error, 'error');
+  }
+}
+
+// ── Integrity verification ────────────────────────────────────────────────
+async function verificarIntegridad(pacienteId) {
+  const res = await window.api.verificarIntegridadNotas(pacienteId);
+  if (!res.ok) { showToast('Error al verificar integridad.', 'error'); return; }
+
+  const body = res.data.length
+    ? res.data.map(r => `
+      <div class="integrity-row ${r.integro ? 'integrity-ok' : 'integrity-fail'}">
+        ${r.integro ? '✅' : '❌'}
+        <strong>${tipoLabelsMap[r.tipo_nota] || r.tipo_nota}</strong> — ${r.fecha_nota}
+        <span style="margin-left:auto;font-size:.75rem;">${r.integro ? 'ÍNTEGRO' : '¡ALTERADO!'}</span>
+      </div>`)
+      .join('')
+    : '<p style="color:var(--text-muted);">No hay notas para verificar.</p>';
+
+  document.getElementById('ver-nota-header').style.background =
+    'linear-gradient(135deg,var(--primary-dark),var(--primary))';
+  document.getElementById('ver-nota-title').textContent = '🔐 Verificación de Integridad de Notas';
+  document.getElementById('ver-nota-body').innerHTML = `
+    <p style="font-size:.875rem;margin-bottom:12px;color:var(--text-muted);">
+      Verificación SHA-256 de todas las notas clínicas del paciente:
+    </p>
+    ${body}
+  `;
+  openModal('modal-ver-nota');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+cargarPacientes();
+</script>
+</body>
+</html>

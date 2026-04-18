@@ -1,0 +1,19 @@
+{
+  "name": "jprdzmfile-hc",
+  "version": "1.0.0",
+  "description": "Historia Clínica Electrónica - NOM-004-SSA3-2012",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": [],
+  "author": "Jprdzm",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^9.4.3"
+  },
+  "devDependencies": {
+    "electron": "^41.0.0"
+  }
+}
